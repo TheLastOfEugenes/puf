@@ -1,4 +1,5 @@
-import sys, subprocess, re
+import json, sys, subprocess, re
+from pathlib import Path
 
 def run_ffuf():
     target = sys.argv[1]
@@ -17,19 +18,25 @@ def run_ffuf():
 
     proc = subprocess.Popen(
         ffuf_command,
-        stdout=subprocess.DEVNULL,   # ← no pipe, no buffer, no block
+        stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         text=True
     )
 
     for line in proc.stderr:
-        m = re.search(r'(\d+)\s*/\s*(\d+)', line)
+        m = re.search(r'\[(\d+)/(\d+)\]', line)
         if m:
             done, total = int(m.group(1)), int(m.group(2))
             pct = int((done / total) * 100) if total else 0
             print(f"PROGRESS:{pct}", flush=True)
 
     proc.wait()
+
+    # ── run filter after scan completes ──
+    filter_script = Path(__file__).parent / 'filter.py'
+    subprocess.run(['python3', str(filter_script), outfile])
+    # ─────────────────────────────────────
+
     if proc.returncode != 0:
         print("PROGRESS:error", flush=True)
         sys.exit(1)
