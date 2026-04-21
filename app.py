@@ -4,6 +4,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 
+processes = {}
 working_path = Path.cwd()
 base_path = working_path/'puf'
 base_path.mkdir(parents=True, exist_ok=True)
@@ -147,15 +148,16 @@ def dirs_ffuf_results(target, hostname, service):
 @app.route('/api/scan/nmap')
 def stream_nmap():
     target = request.args.get('target')
+    tab_id = request.args.get('tabId')
     url = target
     if '://' not in url:
         url = '%s%s' % ('http://', url)
     parsed = urlparse(url)
-    
+
     outpath = base_path/f"{parsed.hostname}"
     outpath.mkdir(parents=True, exist_ok=True)
     outfile = outpath/'nmap.xml'
-    
+
     def generate():
         nmap_script_path = server_base_path/'scans/nmap.py'
         process = subprocess.Popen(
@@ -165,10 +167,14 @@ def stream_nmap():
             bufsize=1,
             text=True
         )
+        if tab_id:
+            processes[tab_id] = process
         for line in iter(process.stdout.readline, ''):
             yield f"data: {line.rstrip(chr(10))}\n\n"
         process.stdout.close()
         process.wait()
+        if tab_id:
+            processes.pop(tab_id, None)
         yield "data: [DONE]\n\n"
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
@@ -176,6 +182,7 @@ def stream_nmap():
 def stream_ffuf():
     target = request.args.get('target')
     type = request.args.get('type')
+    tab_id = request.args.get('tabId')
     url = target
     if '://' not in url:
         url = '%s%s' % ('http://', url)
@@ -224,12 +231,24 @@ def stream_ffuf():
             bufsize=1,
             text=True
         )
+        if tab_id:
+            processes[tab_id] = process
         for line in iter(process.stdout.readline, ''):
             yield f"data: {line.rstrip(chr(10))}\n\n"
         process.stdout.close()
         process.wait()
+        if tab_id:
+            processes.pop(tab_id, None)
         yield "data: [DONE]\n\n"
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+@app.route('/api/scan/kill/<tab_id>', methods=['POST'])
+def kill_scan(tab_id):
+    proc = processes.pop(tab_id, None)
+    if proc:
+        proc.terminate()
+        return jsonify({'ok': True})
+    return jsonify({'error': 'not found'}), 404
 
 @app.route('/')
 def index():

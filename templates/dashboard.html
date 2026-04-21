@@ -68,12 +68,13 @@ function createTab(label, kind) {
   tab.className = 'tab';
   tab.id = 'tabbtn_' + id;
   tab.innerHTML =
-    '<span class="tab-dot running" id="dot_' + id + '"></span>' +
-    '<span class="tab-label">' + label + '</span>' +
-    '<span class="tab-kind">' + kind + '</span>' +
-    '<button class="tab-x" onclick="closeTab(event,\'' + id + '\')">&#x2715;</button>';
+  '<span class="tab-dot running" id="dot_' + id + '"></span>' +
+  '<span class="tab-label">' + label + '</span>' +
+  '<span class="tab-kind">' + kind + '</span>' +
+  '<button class="tab-kill btn-ghost" id="kill_' + id + '" onclick="killTab(event,\'' + id + '\')" title="Kill scan">&#x25A0;</button>' +
+  '<button class="tab-x" onclick="closeTab(event,\'' + id + '\')">&#x2715;</button>';
   tab.addEventListener('click', function(e) {
-    if (!e.target.classList.contains('tab-x')) activateTab(id);
+    if (!e.target.classList.contains('tab-x') && !e.target.classList.contains('tab-kill')) activateTab(id);
   });
   tabbar.appendChild(tab);
 
@@ -88,7 +89,7 @@ function createTab(label, kind) {
       '<div style="display:flex;flex-direction:column;gap:12px;padding:20px 0;">' +
         '<div style="color:var(--muted);font-size:var(--xs);">Running ' + kind + ' scan on ' + label + '…</div>' +
         '<div style="background:var(--surface);border-radius:var(--r);overflow:hidden;height:18px;width:100%;">' +
-          '<div id="bar_' + id + '" style="height:100%;width:0%;background:var(--blue);transition:width 0.4s;text-align:center;font-size:11px;line-height:18px;color:#fff;"></div>' +
+          '<div id="bar_' + id + '" style="height:100%;width:0%;background:var(--blue);transition:width 0.4s;"></div>' +
         '</div>' +
         '<div id="pct_' + id + '" style="color:var(--muted);font-size:var(--xs);">0%</div>' +
       '</div>';
@@ -133,6 +134,16 @@ function closeTab(e, id) {
   }
 }
 
+function killTab(e, id) {
+  e.stopPropagation();
+  fetch('/api/scan/kill/' + id, { method: 'POST' })
+    .then(function() {
+      setDot(id, 'error');
+      var kill = document.getElementById('kill_' + id);
+      if (kill) kill.style.display = 'none';
+    });
+}
+
 function setDot(id, state) {
   const dot = document.getElementById('dot_' + id);
   if (dot) { dot.className = 'tab-dot ' + state; }
@@ -159,7 +170,9 @@ function stream(url, tabId) {
     if (e.data === '[DONE]') {
       src.close();
       setDot(tabId, 'done');
-      refreshTree();
+      var kill = document.getElementById('kill_' + tabId);
+      if (kill) kill.style.display = 'none';
+       refreshTree();
       return;
     }
     appendLine(tabId, e.data);
@@ -189,13 +202,13 @@ function isIp(str) {
 
 function launchNmap(target) {
   var id = createTab(target, 'nmap');
-  stream('/api/scan/nmap?target=' + encodeURIComponent(target), id);
+  stream('/api/scan/nmap?target=' + encodeURIComponent(target) + '&tabId=' + id, id);
   closePopover();
 }
 
 function launchFfuf(target, type) {
   var id = createTab(target, type);
-  stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type, id);
+  stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id);
   closePopover();
 }
 
@@ -457,7 +470,7 @@ function stream(url, tabId) {
       // fill bar to 100% on completion
       var bar = document.getElementById('bar_' + tabId);
       var pct = document.getElementById('pct_' + tabId);
-      if (bar) { bar.style.width = '100%'; bar.textContent = '100%'; }
+      if (bar) bar.style.width = '100%';
       if (pct) pct.textContent = '100%';
       refreshTree();
       return;
@@ -466,7 +479,7 @@ function stream(url, tabId) {
       var val = e.data.split(':')[1];
       var bar = document.getElementById('bar_' + tabId);
       var pct = document.getElementById('pct_' + tabId);
-      if (bar) { bar.style.width = val + '%'; bar.textContent = val + '%'; }
+      if (bar) bar.style.width = val + '%';
       if (pct) pct.textContent = val + '%';
       return;
     }
