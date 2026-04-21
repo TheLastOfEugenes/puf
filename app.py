@@ -3,6 +3,7 @@ import subprocess, json, os
 from pathlib import Path
 from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
+import shutil
 
 processes = {}
 working_path = Path.cwd()
@@ -249,6 +250,26 @@ def kill_scan(tab_id):
         proc.terminate()
         return jsonify({'ok': True})
     return jsonify({'error': 'not found'}), 404
+
+@app.route('/api/delete', methods=['POST'])
+def delete_path():
+    data = request.get_json()
+    rel_path = data.get('path', '')
+    target = (base_path / rel_path).resolve()
+
+    # safety check — must be inside base_path
+    if not str(target).startswith(str(base_path.resolve())):
+        return jsonify({'error': 'forbidden'}), 403
+
+    if not target.exists():
+        return jsonify({'error': 'not found'}), 404
+
+    if target.is_dir():
+        shutil.rmtree(target)
+    else:
+        target.unlink()
+
+    return jsonify({'ok': True})
 
 @app.route('/')
 def index():

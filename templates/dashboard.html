@@ -50,6 +50,17 @@
     <div id="popover-actions"></div>
   </div>
 
+  <div class="modal-overlay" id="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-title">Delete?</div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modal-confirm" style="background:var(--red);">Delete</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 <script>
 // ── State ─────────────────────────────────────
@@ -336,9 +347,11 @@ function buildTree(data, container) {
     var label = document.createElement('div');
     label.className = 'tree-label';
     label.style.paddingLeft = 'calc(' + indent + ' + 12px)';
+    label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%';
     label.innerHTML =
       '<svg class="ticon" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1h5.5c.966 0 1.75.784 1.75 1.75v.5h3.5A1.75 1.75 0 0114.25 5v7.25A1.75 1.75 0 0112.5 14H1.75A1.75 1.75 0 010 12.25V2.75C0 1.784.784 1 1.75 1z"/></svg>' +
-      '<span>' + name + '</span>';
+      '<span style="flex:1">' + name + '</span>' +
+      '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '\',\'' + name + '\')">&#x2715;</button>';
     label.addEventListener('click', function(e) {
       e.stopPropagation();
       folderPopover(e.clientX, e.clientY, name, parts);
@@ -352,9 +365,11 @@ function buildTree(data, container) {
         var flabel = document.createElement('div');
         flabel.className = 'tree-label file';
         flabel.style.paddingLeft = 'calc(' + fileIndent + ' + 14px)';
+        flabel.style.cssText = 'padding-left:calc(' + fileIndent + ' + 14px);display:flex;align-items:center;width:100%';
         flabel.innerHTML =
           '<svg class="ticon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0113.25 16h-9.5A1.75 1.75 0 012 14.25V1.75z"/></svg>' +
-          '<span>' + f + '</span>';
+          '<span style="flex:1">' + f + '</span>' +
+          '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '/' + f + '\',\'' + f + '\')">&#x2715;</button>';
         flabel.addEventListener('click', function(e) {
           e.stopPropagation();
           filePopover(e.clientX, e.clientY, f, parts);
@@ -490,6 +505,29 @@ function stream(url, tabId) {
     src.close();
     setDot(tabId, 'error');
   };
+}
+
+function showModal(message, onConfirm) {
+  document.getElementById('modal-body').textContent = message;
+  document.getElementById('modal-confirm').onclick = function() {
+    closeModal();
+    onConfirm();
+  };
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+
+function deletePath(path, label) {
+  showModal('Delete "' + label + '"? This cannot be undone.', function() {
+    fetch('/api/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: path })
+    }).then(function() { refreshTree(); });
+  });
 }
 
 // ── Init ──────────────────────────────────────
