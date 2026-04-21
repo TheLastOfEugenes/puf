@@ -83,67 +83,17 @@ def nmap_results(target):
     except ET.ParseError:
         return jsonify({'error': 'XML not ready yet'}), 204
     
-@app.route('/api/results/<target>/<hostname>')
-def subs_ffuf_results(target, hostname):
-    print("fetching ffuf subs", target, hostname)
+@app.route('/api/results/file')
+def file_results():
+    rel_path = request.args.get('path', '')
+    target = (base_path / rel_path).resolve()
 
-    target_path = base_path / target
-    if not target_path.exists():
+    if not str(target).startswith(str(base_path.resolve())):
+        return jsonify({'error': 'forbidden'}), 403
+    if not target.exists():
         return jsonify([])
 
-    hostname_path = target_path / hostname
-    if not hostname_path.exists():
-        return jsonify([])
-
-    subs_ffuf_path = hostname_path / 'subs.json'
-    if not subs_ffuf_path.exists() or not subs_ffuf_path.read_text().strip():
-        return jsonify([])
-
-    return jsonify(json.load(open(subs_ffuf_path)))
-
-@app.route('/api/results/<target>/<hostname>/<service>/files')
-def files_ffuf_results(target, hostname, service):
-    print("fetching ffuf files", target, hostname, service)
-
-    target_path = base_path / target
-    if not target_path.exists():
-        return jsonify([])
-
-    hostname_path = target_path / hostname
-    if not hostname_path.exists():
-        return jsonify([])
-    
-    service_path = hostname_path / service
-    if not service_path.exists():
-        return jsonify([])
-
-    files_ffuf_path = service_path / 'files.json'
-    if not files_ffuf_path.exists() or not files_ffuf_path.read_text().strip():
-        return jsonify([])
-
-    return jsonify(json.load(open(files_ffuf_path)))
-
-@app.route('/api/results/<target>/<hostname>/<service>/dirs')
-def dirs_ffuf_results(target, hostname, service):
-    print("fetching ffuf dirs", target, hostname, service)
-
-    target_path = base_path / target
-    if not target_path.exists():
-        return jsonify([])
-
-    hostname_path = target_path / hostname
-    if not hostname_path.exists():
-        return jsonify([])
-    
-    service_path = hostname_path / service
-    if not service_path.exists():
-        return jsonify([])
-
-    dirs_ffuf_path = service_path / 'dirs.json'
-    if not dirs_ffuf_path.exists() or not dirs_ffuf_path.read_text().strip():
-        return jsonify([])
-
-    return jsonify(json.load(open(dirs_ffuf_path)))
+    return jsonify(json.load(open(target)))
 
 # scans are started by posting to a single endpoint with the necessary values
 # app.py
@@ -171,6 +121,7 @@ def stream_nmap():
         )
         if tab_id:
             processes[tab_id] = process
+        yield f"data: OUTFILE:{str(outfile.relative_to(base_path))}\n\n"
         for line in iter(process.stdout.readline, ''):
             yield f"data: {line.rstrip(chr(10))}\n\n"
         process.stdout.close()
@@ -235,6 +186,7 @@ def stream_ffuf():
         )
         if tab_id:
             processes[tab_id] = process
+        yield f"data: OUTFILE:{str(outfile.relative_to(base_path))}\n\n"
         for line in iter(process.stdout.readline, ''):
             yield f"data: {line.rstrip(chr(10))}\n\n"
         process.stdout.close()

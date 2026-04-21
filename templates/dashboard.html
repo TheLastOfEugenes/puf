@@ -183,7 +183,19 @@ function stream(url, tabId) {
       setDot(tabId, 'done');
       var kill = document.getElementById('kill_' + tabId);
       if (kill) kill.style.display = 'none';
-       refreshTree();
+      refreshTree();
+
+      // auto-open the result file in a new tab
+      var outfile = tabs[tabId] && tabs[tabId].outfile;
+      if (outfile) {
+        var u = '/api/results/file?path=' + encodeURIComponent(outfile);
+        var label = tabs[tabId].label + ' (' + tabs[tabId].kind + ')';
+        viewJson(u, label);
+      }
+      return;
+    }
+    if (e.data.startsWith('OUTFILE:')) {
+      if (tabs[tabId]) tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
       return;
     }
     appendLine(tabId, e.data);
@@ -400,40 +412,32 @@ function folderPopover(x, y, name, parts) {
   }
 
   if (parts.length === 4) {
-    var hostname2 = parts[2];
+    var hostname2 = parts[1];
     var svc = parts[3];
     var sp = svc.split('_');
-    var scheme = sp[0], port = sp[1];
-    var httpUrl  = 'http://'  + hostname2 + ':' + port;
-    var httpsUrl = 'https://' + hostname2 + ':' + port;
-    actions.push({ label: '▶ web scan (http)',  fn: function() { webScan(httpUrl,  hostname2); }, primary: true });
-    actions.push({ label: '▶ web scan (https)', fn: function() { webScan(httpsUrl, hostname2); }, primary: true });
-    actions.push({ label: '▶ files (http)',  fn: function() { launchFfuf(httpUrl,  'files'); } });
-    actions.push({ label: '▶ dirs  (http)',  fn: function() { launchFfuf(httpUrl,  'dirs');  } });
-    actions.push({ label: '▶ files (https)', fn: function() { launchFfuf(httpsUrl, 'files'); } });
-    actions.push({ label: '▶ dirs  (https)', fn: function() { launchFfuf(httpsUrl, 'dirs');  } });
+    var scheme = sp[0];
+    var port = sp[1];
+    var url = scheme + '://' + hostname2 + ':' + port;
+
+    actions.push({ label: '▶ web scan',   fn: function() { webScan(url, hostname2); }, primary: true });
+    actions.push({ label: '▶ files scan', fn: function() { launchFfuf(url, 'files'); } });
+    actions.push({ label: '▶ dirs scan',  fn: function() { launchFfuf(url, 'dirs');  } });
   }
 
   if (actions.length) showPopover(x, y, name, actions);
 }
 
 function filePopover(x, y, name, parts) {
-  var target = parts[1];
-  var hostname = parts[2];
-  var service = parts[3];
   var actions = [];
+
   if (name === 'nmap.xml') {
-    actions.push({ label: 'View nmap results', fn: function() { viewNmap(target); } });
-  } else if (name === 'subs.json') {
-    var u = '/api/results/' + target + '/' + hostname;
-    actions.push({ label: 'View subs results', fn: function() { viewJson(u, name); } });
-  } else if (name === 'files.json') {
-    var u2 = '/api/results/' + target + '/' + hostname + '/' + service + '/files';
-    actions.push({ label: 'View files results', fn: function() { viewJson(u2, name); } });
-  } else if (name === 'dirs.json') {
-    var u3 = '/api/results/' + target + '/' + hostname + '/' + service + '/dirs';
-    actions.push({ label: 'View dirs results', fn: function() { viewJson(u3, name); } });
+    actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[0]); } });
+  } else if (name.endsWith('.json')) {
+    var filePath = parts.join('/') + '/' + name;
+    var u = '/api/results/file?path=' + encodeURIComponent(filePath);
+    actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
   }
+
   if (actions.length) showPopover(x, y, name, actions);
 }
 
@@ -479,17 +483,12 @@ function webScan(baseUrl, hostname) {
 function stream(url, tabId) {
   const src = new EventSource(url);
   src.onmessage = function(e) {
-    if (e.data === '[DONE]') {
-      src.close();
-      setDot(tabId, 'done');
-      // fill bar to 100% on completion
-      var bar = document.getElementById('bar_' + tabId);
-      var pct = document.getElementById('pct_' + tabId);
-      if (bar) bar.style.width = '100%';
-      if (pct) pct.textContent = '100%';
-      refreshTree();
+
+    if (e.data.startsWith('OUTFILE:')) {
+      if (tabs[tabId]) tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
       return;
     }
+
     if (e.data.startsWith('PROGRESS:')) {
       var val = e.data.split(':')[1];
       var bar = document.getElementById('bar_' + tabId);
@@ -498,9 +497,33 @@ function stream(url, tabId) {
       if (pct) pct.textContent = val + '%';
       return;
     }
-    // nmap lines fall through here
+
+    if (e.data === '[DONE]') {
+      src.close();
+      setDot(tabId, 'done');
+      var kill = document.getElementById('kill_' + tabId);
+      if (kill) kill.style.display = 'none';
+      refreshTree();
+
+      var outfile = tabs[tabId] && tabs[tabId].outfile;
+      var kind = tabs[tabId] && tabs[tabId].kind;
+      if (outfile) {
+        if (kind === 'nmap') {
+          var target = outfile.split('/')[0];
+          viewNmap(target);
+        } else {
+          var u = '/api/results/file?path=' + encodeURIComponent(outfile);
+          var label = tabs[tabId].label + ' (' + kind + ')';
+          viewJson(u, label);
+        }
+      }
+      return;
+    }
+
+    // nmap raw lines
     appendLine(tabId, e.data);
   };
+
   src.onerror = function() {
     src.close();
     setDot(tabId, 'error');
