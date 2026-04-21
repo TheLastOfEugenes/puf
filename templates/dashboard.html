@@ -503,13 +503,12 @@ function stream(url, tabId) {
           viewNmap(target);
         } else {
           var filteredOutfile = outfile.replace(/\.json$/, '_filtered.json');
-          console.log(filteredOutfile)
+          var label = tabs[tabId].label + ' (' + kind + ')';  // ← before fetch
           fetch('/api/results/file?path=' + encodeURIComponent('puf/' + filteredOutfile))
             .then(function(r) { return r.json(); })
             .then(function(data) {
               var useFile = (data && data.results && data.results.length) ? filteredOutfile : outfile;
               var u = '/api/results/file?path=' + encodeURIComponent('puf/' + useFile);
-              var label = tabs[tabId].label + ' (' + kind + ')';
               viewJson(u, label);
             });
         }
