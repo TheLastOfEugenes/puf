@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>puf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <span class="topbar-logo">&#x25C8; puf</span>
+    <form class="topbar-form" onsubmit="launchNmapForm(event)">
+      <input type="text" id="target-input" placeholder="new target IP or hostname..." autocomplete="off">
+      <button type="submit" class="btn btn-primary">+ nmap</button>
+    </form>
+    <button class="btn btn-ghost" onclick="refreshTree()">&#x21BA;</button>
+  </header>
+
+  <!-- Left: file tree -->
+  <aside class="panel-tree">
+    <div class="panel-header">Results</div>
+    <div class="tree-scroll">
+      <ul id="tree-root"></ul>
+    </div>
+  </aside>
+
+  <!-- Right: tabbed output -->
+  <main class="panel-output">
+    <div class="tabbar" id="tabbar">
+      <span class="tabbar-empty" id="tabbar-empty">No scans yet</span>
+    </div>
+    <div class="output-area" id="output-area">
+      <div class="empty-hint" id="empty-hint">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"/>
+        </svg>
+        <p>Launch a scan or click a file in the tree</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Context popover -->
+  <div id="popover" class="popover" style="display:none">
+    <div class="popover-title" id="popover-title"></div>
+    <div id="popover-actions"></div>
+  </div>
+
+</div>
+<script>
+// ── State ─────────────────────────────────────
+let tabs = {};
+let activeTabId = null;
+let counter = 0;
+
+// ── Tabs ──────────────────────────────────────
+function createTab(label, kind) {
+  const id = 'tab' + (++counter);
+  const tabbar = document.getElementById('tabbar');
+  const hint = document.getElementById('tabbar-empty');
+  if (hint) hint.remove();
+
+  // tab button
+  const tab = document.createElement('div');
+  tab.className = 'tab';
+  tab.id = 'tabbtn_' + id;
+  tab.innerHTML =
+    '<span class="tab-dot running" id="dot_' + id + '"></span>' +
+    '<span class="tab-label">' + label + '</span>' +
+    '<span class="tab-kind">' + kind + '</span>' +
+    '<button class="tab-x" onclick="closeTab(event,\'' + id + '\')">&#x2715;</button>';
+  tab.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('tab-x')) activateTab(id);
+  });
+  tabbar.appendChild(tab);
+
+  // content pane
+  const pane = document.createElement('div');
+  pane.className = 'pane';
+  pane.id = 'pane_' + id;
+  pane.style.display = 'none';
+  pane.innerHTML = '<pre class="scan-out" id="out_' + id + '"></pre>';
+  document.getElementById('output-area').appendChild(pane);
+
+  tabs[id] = { label, kind, tab, pane };
+  document.getElementById('empty-hint').style.display = 'none';
+  activateTab(id);
+  return id;
+}
+
+function activateTab(id) {
+  if (activeTabId && tabs[activeTabId]) {
+    tabs[activeTabId].tab.classList.remove('active');
+    tabs[activeTabId].pane.style.display = 'none';
+  }
+  activeTabId = id;
+  tabs[id].tab.classList.add('active');
+  tabs[id].pane.style.display = 'flex';
+}
+
+function closeTab(e, id) {
+  e.stopPropagation();
+  tabs[id].tab.remove();
+  tabs[id].pane.remove();
+  delete tabs[id];
+  const keys = Object.keys(tabs);
+  if (keys.length > 0) {
+    activateTab(keys[keys.length - 1]);
+  } else {
+    activeTabId = null;
+    document.getElementById('empty-hint').style.display = 'flex';
+    const tabbar = document.getElementById('tabbar');
+    const hint = document.createElement('span');
+    hint.className = 'tabbar-empty';
+    hint.id = 'tabbar-empty';
+    hint.textContent = 'No scans yet';
+    tabbar.appendChild(hint);
+  }
+}
+
+function setDot(id, state) {
+  const dot = document.getElementById('dot_' + id);
+  if (dot) { dot.className = 'tab-dot ' + state; }
+}
+
+function appendLine(id, text) {
+  const out = document.getElementById('out_' + id);
+  if (!out) return;
+  out.textContent += text + '\n';
+  if (activeTabId === id) {
+    const pane = tabs[id].pane;
+    pane.scrollTop = pane.scrollHeight;
+  }
+}
+
+function setPaneContent(id, html) {
+  tabs[id].pane.innerHTML = html;
+}
+
+// ── SSE ───────────────────────────────────────
+function stream(url, tabId) {
+  const src = new EventSource(url);
+  src.onmessage = function(e) {
+    if (e.data === '[DONE]') {
+      src.close();
+      setDot(tabId, 'done');
+      refreshTree();
+      return;
+    }
+    appendLine(tabId, e.data);
+  };
+  src.onerror = function() {
+    src.close();
+    setDot(tabId, 'error');
+  };
+}
+
+// ── Launchers ─────────────────────────────────
+function launchNmapForm(e) {
+  e.preventDefault();
+  var t = document.getElementById('target-input').value.trim();
+  if (!t) return;
+  launchNmap(t);
+  if (!isIp(t)) {
+    // domain name — start full web scan on both http and https
+    webScan('http://' + t, t);
+    // webScan('https://' + t, t);
+  }
+}
+
+function isIp(str) {
+  return /^(\d{1,3}\.){3}\d{1,3}$/.test(str);
+}
+
+function launchNmap(target) {
+  var id = createTab(target, 'nmap');
+  stream('/api/scan/nmap?target=' + encodeURIComponent(target), id);
+  closePopover();
+}
+
+function launchFfuf(target, type) {
+  var id = createTab(target, type);
+  stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type, id);
+  closePopover();
+}
+
+// ── Result viewers ────────────────────────────
+function viewNmap(target) {
+  fetch('/api/results/' + encodeURIComponent(target))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var id = createTab(target, 'nmap results');
+      setDot(id, 'done');
+      if (!Array.isArray(data) || !data.length) {
+        setPaneContent(id, '<div class="empty-hint"><p>No results yet</p></div>');
+        return;
+      }
+      var rows = '';
+      data.forEach(function(host) {
+        host.ports.forEach(function(p) {
+          // use target (hostname) not host.ip
+          rows += '<tr class="port-row clickable" onclick="portRowClick(event, \'' + target + '\', \'' + p.port + '\')">' +
+            '<td>' + host.ip + '</td>' +
+            '<td>' + p.port + '</td>' +
+            '<td>' + p.protocol + '</td>' +
+            '<td class="state-' + p.state + '">' + p.state + '</td>' +
+            '<td>' + p.service + '</td>' +
+            '<td class="muted">' + (p.version || '').trim() + '</td>' +
+            '<td class="hint-cell">&#x25B6;</td>' +
+            '</tr>';
+        });
+      });
+      setPaneContent(id,
+        '<div class="pane-table">' +
+        '<table class="rtable"><thead><tr>' +
+        '<th>IP</th><th>Port</th><th>Proto</th><th>State</th><th>Service</th><th>Version</th><th></th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div>');
+    });
+  closePopover();
+}
+
+function viewJson(apiUrl, label) {
+  fetch(apiUrl)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var id = createTab(label, 'results');
+      setDot(id, 'done');
+
+      var results = data.results || data; // ffuf wraps in .results
+      if (!Array.isArray(results) || !results.length) {
+        setPaneContent(id, '<div class="empty-hint"><p>No results</p></div>');
+        return;
+      }
+
+      var rows = '';
+      results.forEach(function(r, i) {
+        rows += '<tr class="result-row" id="rrow_' + id + '_' + i + '" onclick="resultRowClick(event, \'' + r.url + '\')">' +
+          '<td><a href="' + r.url + '" target="_blank" class="result-url">' + r.url + '</a></td>' +
+          '<td class="status-' + Math.floor(r.status/100) + 'xx">' + r.status + '</td>' +
+          '<td class="muted">' + r.length + '</td>' +
+          '<td class="muted">' + r.words + '</td>' +
+          '<td class="muted">' + r.lines + '</td>' +
+          '<td><button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + i + '\')" title="Flag as target">⚑</button></td>' +
+          '</tr>';
+      });
+
+      setPaneContent(id,
+        '<div class="pane-table">' +
+        '<table class="rtable"><thead><tr>' +
+        '<th>URL</th><th>Status</th><th>Length</th><th>Words</th><th>Lines</th><th></th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div>');
+    });
+  closePopover();
+}
+
+function toggleFlag(btn, rowId) {
+  var row = document.getElementById(rowId);
+  row.classList.toggle('flagged');
+  btn.classList.toggle('flagged');
+}
+
+// ── Popover ───────────────────────────────────
+function showPopover(x, y, title, actions) {
+  var p = document.getElementById('popover');
+  document.getElementById('popover-title').textContent = title;
+  var el = document.getElementById('popover-actions');
+  el.innerHTML = '';
+  actions.forEach(function(a) {
+    var btn = document.createElement('button');
+    btn.className = 'popover-btn' + (a.primary ? ' primary' : '');
+    btn.textContent = a.label;
+    btn.onclick = a.fn;
+    el.appendChild(btn);
+  });
+  p.style.display = 'block';
+  p.style.left = x + 'px';
+  p.style.top = y + 'px';
+}
+
+function closePopover() {
+  document.getElementById('popover').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#popover') && !e.target.closest('.tree-label')) closePopover();
+});
+
+// ── Tree ──────────────────────────────────────
+function refreshTree() {
+  fetch('/api/tree')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var root = document.getElementById('tree-root');
+      root.innerHTML = '';
+      buildTree(data, root, 0);
+    });
+}
+
+function buildTree(data, container, depth) {
+  var indent = (depth * 14) + 'px';
+
+  Object.keys(data).forEach(function(path) {
+    var node = data[path];
+    var name = path.split('/').pop() || path;
+    var parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+
+    // folder row
+    var li = document.createElement('li');
+    var label = document.createElement('div');
+    label.className = 'tree-label';
+    label.style.paddingLeft = 'calc(' + indent + ' + 12px)';
+    label.innerHTML =
+      '<svg class="ticon" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1h5.5c.966 0 1.75.784 1.75 1.75v.5h3.5A1.75 1.75 0 0114.25 5v7.25A1.75 1.75 0 0112.5 14H1.75A1.75 1.75 0 010 12.25V2.75C0 1.784.784 1 1.75 1z"/></svg>' +
+      '<span>' + name + '</span>';
+    label.addEventListener('click', function(e) {
+      e.stopPropagation();
+      folderPopover(e.clientX, e.clientY, name, parts);
+    });
+    li.appendChild(label);
+
+    // files under this folder
+    if (node.files && node.files.length) {
+      node.files.forEach(function(f) {
+        var fli = document.createElement('li');
+        var flabel = document.createElement('div');
+        flabel.className = 'tree-label file';
+        flabel.style.paddingLeft = 'calc(' + indent + ' + 28px)';
+        flabel.innerHTML =
+          '<svg class="ticon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0113.25 16h-9.5A1.75 1.75 0 012 14.25V1.75z"/></svg>' +
+          '<span>' + f + '</span>';
+        flabel.addEventListener('click', function(e) {
+          e.stopPropagation();
+          filePopover(e.clientX, e.clientY, f, parts);
+        });
+        fli.appendChild(flabel);
+        li.appendChild(fli);
+      });
+    }
+
+    container.appendChild(li);
+  });
+}
+
+function folderPopover(x, y, name, parts) {
+  var actions = [];
+
+  if (parts.length === 1) return;
+
+  if (parts.length === 2) {
+    var target = parts[1];
+    actions.push({ label: '▶ nmap scan', fn: function() { launchNmap(target); }, primary: true });
+  }
+
+  if (parts.length === 3) {
+    var hostname = parts[2];
+    actions.push({ label: '▶ subs scan (http)',  fn: function() { launchFfuf('http://'  + hostname, 'subs'); }, primary: true });
+    actions.push({ label: '▶ subs scan (https)', fn: function() { launchFfuf('https://' + hostname, 'subs'); }, primary: true });
+  }
+
+  if (parts.length === 4) {
+    var hostname2 = parts[2];
+    var svc = parts[3];
+    var sp = svc.split('_');
+    var scheme = sp[0], port = sp[1];
+    var httpUrl  = 'http://'  + hostname2 + ':' + port;
+    var httpsUrl = 'https://' + hostname2 + ':' + port;
+    actions.push({ label: '▶ web scan (http)',  fn: function() { webScan(httpUrl,  hostname2); }, primary: true });
+    actions.push({ label: '▶ web scan (https)', fn: function() { webScan(httpsUrl, hostname2); }, primary: true });
+    actions.push({ label: '▶ files (http)',  fn: function() { launchFfuf(httpUrl,  'files'); } });
+    actions.push({ label: '▶ dirs  (http)',  fn: function() { launchFfuf(httpUrl,  'dirs');  } });
+    actions.push({ label: '▶ files (https)', fn: function() { launchFfuf(httpsUrl, 'files'); } });
+    actions.push({ label: '▶ dirs  (https)', fn: function() { launchFfuf(httpsUrl, 'dirs');  } });
+  }
+
+  if (actions.length) showPopover(x, y, name, actions);
+}
+
+function filePopover(x, y, name, parts) {
+  var target = parts[1];
+  var hostname = parts[2];
+  var service = parts[3];
+  var actions = [];
+  if (name === 'nmap.xml') {
+    actions.push({ label: 'View nmap results', fn: function() { viewNmap(target); } });
+  } else if (name === 'subs.json') {
+    var u = '/api/results/' + target + '/' + hostname;
+    actions.push({ label: 'View subs results', fn: function() { viewJson(u, name); } });
+  } else if (name === 'files.json') {
+    var u2 = '/api/results/' + target + '/' + hostname + '/' + service + '/files';
+    actions.push({ label: 'View files results', fn: function() { viewJson(u2, name); } });
+  } else if (name === 'dirs.json') {
+    var u3 = '/api/results/' + target + '/' + hostname + '/' + service + '/dirs';
+    actions.push({ label: 'View dirs results', fn: function() { viewJson(u3, name); } });
+  }
+  if (actions.length) showPopover(x, y, name, actions);
+}
+
+// ── Offer to start scans on nmap results ──────────────────────────────────────
+function portRowClick(e, hostname, port) {
+  e.stopPropagation();
+  var httpUrl  = 'http://'  + hostname + ':' + port;
+  var httpsUrl = 'https://' + hostname + ':' + port;
+  showPopover(e.clientX, e.clientY, hostname + ':' + port, [
+    { label: '▶ web scan (http)',  fn: function() { webScan(httpUrl,  hostname); }, primary: true },
+    { label: '▶ web scan (https)', fn: function() { webScan(httpsUrl, hostname); }, primary: true },
+  ]);
+}
+
+function resultRowClick(e, url) {
+  if (e.target.tagName === 'A' || e.target.classList.contains('flag-btn')) return;
+  e.stopPropagation();
+  showPopover(e.clientX, e.clientY, url, [
+    { label: '▶ web scan (http)',  fn: function() { webScan(url.replace(/^https/, 'http'),  new URL(url).hostname); }, primary: true },
+    { label: '▶ web scan (https)', fn: function() { webScan(url.replace(/^http:/, 'https:'), new URL(url).hostname); }, primary: true },
+    { label: '▶ files (http)',     fn: function() { launchFfuf(url.replace(/^https/, 'http'),  'files'); } },
+    { label: '▶ dirs  (http)',     fn: function() { launchFfuf(url.replace(/^https/, 'http'),  'dirs');  } },
+    { label: '▶ files (https)',    fn: function() { launchFfuf(url.replace(/^http:/, 'https:'), 'files'); } },
+    { label: '▶ dirs  (https)',    fn: function() { launchFfuf(url.replace(/^http:/, 'https:'), 'dirs');  } },
+  ]);
+}
+
+function webScan(baseUrl, hostname) {
+  launchFfuf(baseUrl, 'files');
+  launchFfuf(baseUrl, 'dirs');
+  launchFfuf('http://' + hostname, 'subs');
+  closePopover();
+}
+
+function webScan(baseUrl, hostname) {
+  // Start files, dirs and subs all at once
+  launchFfuf(baseUrl, 'files');
+  launchFfuf(baseUrl, 'dirs');
+  launchFfuf('http://' + hostname, 'subs');
+  closePopover();
+}
+
+
+// ── Init ──────────────────────────────────────
+refreshTree();
+setInterval(refreshTree, 5000);
+</script>
+</body>
+</html>
