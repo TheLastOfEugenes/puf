@@ -51,7 +51,13 @@ def file_tree():
 
 @app.route('/api/results/<target>')
 def nmap_results(target):
-    target_path = base_path / target
+    
+    url = target
+    if '://' not in url:
+        url = '%s%s' % ('http://', url)
+    parsed = urlparse(url)
+
+    target_path = base_path / parsed.hostname
     if not target_path.exists():
         return jsonify([])
     nmap_path = target_path / 'nmap.xml'
