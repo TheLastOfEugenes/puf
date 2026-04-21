@@ -15,7 +15,12 @@ def run_ffuf():
                         '-u', target, '-w', wordlist, '-o', outfile, '-of', 'json',
                         '-H', f"Host: FUZZ.{hostname}"]
 
-    proc = subprocess.Popen(ffuf_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(
+        ffuf_command,
+        stdout=subprocess.DEVNULL,   # ← no pipe, no buffer, no block
+        stderr=subprocess.PIPE,
+        text=True
+    )
 
     for line in proc.stderr:
         m = re.search(r'(\d+)\s*/\s*(\d+)', line)
@@ -26,7 +31,7 @@ def run_ffuf():
 
     proc.wait()
     if proc.returncode != 0:
-        print(f"PROGRESS:error", flush=True)
+        print("PROGRESS:error", flush=True)
         sys.exit(1)
 
 run_ffuf()
