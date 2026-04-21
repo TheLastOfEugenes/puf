@@ -1,16 +1,21 @@
 import sys, subprocess
+from pathlib import Path
 
-# run the nmap script
 def run_nmap():
     target = sys.argv[1]
     outfile = sys.argv[2]
+    logfile = Path(outfile).parent / 'nmap.log'
+
     print(f"[*] Starting nmap on {target}", flush=True)
 
     nmap_command = ['nmap', '-sCV', '-T4', '-v', '-p-', target, '-oX', outfile]
 
     proc = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    for line in proc.stdout:
-        print(line, end='', flush=True)
+    with open(logfile, 'w') as log:
+        for line in proc.stdout:
+            log.write(line)
+            log.flush()
+            print(line, end='', flush=True)
     proc.wait()
 
     if proc.returncode != 0:

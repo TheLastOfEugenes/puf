@@ -274,6 +274,7 @@ function viewJson(apiUrl, label) {
   fetch(apiUrl)
     .then(function(r) { return r.json(); })
     .then(function(data) {
+      console.log('viewJson data:', data);
       var id = createTab(label, 'results');
       setDot(id, 'done');
 
@@ -419,7 +420,7 @@ function folderPopover(x, y, name, parts) {
     var port = sp[1];
     var url = scheme + '://' + hostname2 + ':' + port;
 
-    actions.push({ label: '▶ web scan',   fn: function() { webScan(url, hostname2); }, primary: true });
+    //actions.push({ label: '▶ web scan',   fn: function() { webScan(url, hostname2); }, primary: true });
     actions.push({ label: '▶ files scan', fn: function() { launchFfuf(url, 'files'); } });
     actions.push({ label: '▶ dirs scan',  fn: function() { launchFfuf(url, 'dirs');  } });
   }
@@ -500,9 +501,6 @@ function stream(url, tabId) {
 
     if (e.data === '[DONE]') {
       src.close();
-      setDot(tabId, 'done');
-      var kill = document.getElementById('kill_' + tabId);
-      if (kill) kill.style.display = 'none';
       refreshTree();
 
       var outfile = tabs[tabId] && tabs[tabId].outfile;
@@ -512,9 +510,35 @@ function stream(url, tabId) {
           var target = outfile.split('/')[0];
           viewNmap(target);
         } else {
-          var u = '/api/results/file?path=' + encodeURIComponent(outfile);
-          var label = tabs[tabId].label + ' (' + kind + ')';
-          viewJson(u, label);
+          var filteredOutfile = outfile.replace(/\.json$/, '_filtered.json');
+          fetch('/api/results/file?path=' + encodeURIComponent(filteredOutfile))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              var useFile = (data && data.results) ? filteredOutfile : outfile;
+              var u = '/api/results/file?path=' + encodeURIComponent(useFile);
+              var label = tabs[tabId].label + ' (' + kind + ')';
+              viewJson(u, label);
+            });
+        }
+      }
+
+      // close the process tab
+      if (tabs[tabId]) {
+        tabs[tabId].tab.remove();
+        tabs[tabId].pane.remove();
+        delete tabs[tabId];
+        var keys = Object.keys(tabs);
+        if (keys.length > 0) {
+          activateTab(keys[keys.length - 1]);
+        } else {
+          activeTabId = null;
+          document.getElementById('empty-hint').style.display = 'flex';
+          var tabbar = document.getElementById('tabbar');
+          var hint = document.createElement('span');
+          hint.className = 'tabbar-empty';
+          hint.id = 'tabbar-empty';
+          hint.textContent = 'No scans yet';
+          tabbar.appendChild(hint);
         }
       }
       return;
