@@ -479,7 +479,6 @@ function stream(url, tabId) {
 
     if (e.data.startsWith('OUTFILE:')) {
       if (tabs[tabId]) tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
-      console.log('outfile set to:', tabs[tabId].outfile);
       return;
     }
 
