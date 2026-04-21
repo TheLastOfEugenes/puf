@@ -64,7 +64,6 @@ function createTab(label, kind) {
   const hint = document.getElementById('tabbar-empty');
   if (hint) hint.remove();
 
-  // tab button
   const tab = document.createElement('div');
   tab.className = 'tab';
   tab.id = 'tabbtn_' + id;
@@ -78,14 +77,26 @@ function createTab(label, kind) {
   });
   tabbar.appendChild(tab);
 
-  // content pane
   const pane = document.createElement('div');
   pane.className = 'pane';
   pane.id = 'pane_' + id;
   pane.style.display = 'none';
-  pane.innerHTML = '<pre class="scan-out" id="out_' + id + '"></pre>';
-  document.getElementById('output-area').appendChild(pane);
 
+  const isFfuf = (kind === 'files' || kind === 'dirs' || kind === 'subs');
+  if (isFfuf) {
+    pane.innerHTML =
+      '<div style="display:flex;flex-direction:column;gap:12px;padding:20px 0;">' +
+        '<div style="color:var(--muted);font-size:var(--xs);">Running ' + kind + ' scan on ' + label + '…</div>' +
+        '<div style="background:var(--surface);border-radius:var(--r);overflow:hidden;height:18px;width:100%;">' +
+          '<div id="bar_' + id + '" style="height:100%;width:0%;background:var(--blue);transition:width 0.4s;text-align:center;font-size:11px;line-height:18px;color:#fff;"></div>' +
+        '</div>' +
+        '<div id="pct_' + id + '" style="color:var(--muted);font-size:var(--xs);">0%</div>' +
+      '</div>';
+  } else {
+    pane.innerHTML = '<pre class="scan-out" id="out_' + id + '"></pre>';
+  }
+
+  document.getElementById('output-area').appendChild(pane);
   tabs[id] = { label, kind, tab, pane };
   document.getElementById('empty-hint').style.display = 'none';
   activateTab(id);
@@ -437,6 +448,36 @@ function webScan(baseUrl, hostname) {
   closePopover();
 }
 
+function stream(url, tabId) {
+  const src = new EventSource(url);
+  src.onmessage = function(e) {
+    if (e.data === '[DONE]') {
+      src.close();
+      setDot(tabId, 'done');
+      // fill bar to 100% on completion
+      var bar = document.getElementById('bar_' + tabId);
+      var pct = document.getElementById('pct_' + tabId);
+      if (bar) { bar.style.width = '100%'; bar.textContent = '100%'; }
+      if (pct) pct.textContent = '100%';
+      refreshTree();
+      return;
+    }
+    if (e.data.startsWith('PROGRESS:')) {
+      var val = e.data.split(':')[1];
+      var bar = document.getElementById('bar_' + tabId);
+      var pct = document.getElementById('pct_' + tabId);
+      if (bar) { bar.style.width = val + '%'; bar.textContent = val + '%'; }
+      if (pct) pct.textContent = val + '%';
+      return;
+    }
+    // nmap lines fall through here
+    appendLine(tabId, e.data);
+  };
+  src.onerror = function() {
+    src.close();
+    setDot(tabId, 'error');
+  };
+}
 
 // ── Init ──────────────────────────────────────
 refreshTree();
