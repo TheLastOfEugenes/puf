@@ -6,8 +6,8 @@ import xml.etree.ElementTree as ET
 import shutil
 
 processes = {}
-working_path = Path.cwd()
-base_path = working_path/'puf'
+working_path = Path.cwd() # ./
+base_path = working_path/'puf' # ./puf
 base_path.mkdir(parents=True, exist_ok=True)
 server_base_path = Path(__file__).parent
 
@@ -25,7 +25,7 @@ server_base_path = Path(__file__).parent
 #      service (web service, subdomains scan)
 #        - files
 #        - dirs
-#      service
+#      services
 #        - files
 #        - dirs
 #      - subs
@@ -51,7 +51,6 @@ def file_tree():
 
 @app.route('/api/results/<target>')
 def nmap_results(target):
-    print("fetching nmap", target)
     target_path = base_path / target
     if not target_path.exists():
         return jsonify([])
@@ -87,6 +86,8 @@ def nmap_results(target):
 def file_results():
     rel_path = request.args.get('path', '')
     target = (working_path / rel_path).resolve()
+
+    print(f"rel_path={rel_path}, target={target}, exists={target.exists()}")
 
     if not str(target).startswith(str(base_path.resolve())):
         return jsonify({'error': 'forbidden'}), 403
@@ -214,8 +215,6 @@ def delete_path():
         rel_path = rel_path[4:]
 
     target = (base_path / rel_path).resolve()
-
-    print(target)
 
     # safety check — must be inside base_path
     if not str(target).startswith(str(base_path.resolve())):
