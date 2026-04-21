@@ -8,10 +8,10 @@ def run_ffuf():
     subs = (sys.argv[5] == "True")
 
     if not subs:
-        ffuf_command = ['ffuf', '-k', '-c', '-mc', 'all', '-s',
+        ffuf_command = ['ffuf', '-k', '-c', '-mc', 'all',
                         '-u', target + "/FUZZ", '-w', wordlist, '-o', outfile, '-of', 'json']
     else:
-        ffuf_command = ['ffuf', '-k', '-c', '-mc', 'all', '-s',
+        ffuf_command = ['ffuf', '-k', '-c', '-mc', 'all',
                         '-u', target, '-w', wordlist, '-o', outfile, '-of', 'json',
                         '-H', f"Host: FUZZ.{hostname}"]
 
