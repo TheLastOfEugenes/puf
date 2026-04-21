@@ -88,6 +88,8 @@ def file_results():
     rel_path = request.args.get('path', '')
     target = (base_path / rel_path).resolve()
 
+    print(f"file_results: rel_path={rel_path}, target={target}, exists={target.exists()}")
+
     if not str(target).startswith(str(base_path.resolve())):
         return jsonify({'error': 'forbidden'}), 403
     if not target.exists():

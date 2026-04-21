@@ -274,7 +274,6 @@ function viewJson(apiUrl, label) {
   fetch(apiUrl)
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      console.log('viewJson data:', data);
       var id = createTab(label, 'results');
       setDot(id, 'done');
 
@@ -467,13 +466,6 @@ function resultRowClick(e, url) {
 }
 
 function webScan(baseUrl, hostname) {
-  launchFfuf(baseUrl, 'files');
-  launchFfuf(baseUrl, 'dirs');
-  launchFfuf('http://' + hostname, 'subs');
-  closePopover();
-}
-
-function webScan(baseUrl, hostname) {
   // Start files, dirs and subs all at once
   launchFfuf(baseUrl, 'files');
   launchFfuf(baseUrl, 'dirs');
@@ -487,6 +479,7 @@ function stream(url, tabId) {
 
     if (e.data.startsWith('OUTFILE:')) {
       if (tabs[tabId]) tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
+      console.log('outfile set to:', tabs[tabId].outfile);
       return;
     }
 
