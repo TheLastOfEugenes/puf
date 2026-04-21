@@ -87,8 +87,6 @@ def file_results():
     rel_path = request.args.get('path', '')
     target = (working_path / rel_path).resolve()
 
-    print(f"rel_path={rel_path}, target={target}, exists={target.exists()}")
-
     if not str(target).startswith(str(base_path.resolve())):
         return jsonify({'error': 'forbidden'}), 403
     if not target.exists():
@@ -175,7 +173,7 @@ def stream_ffuf():
         wordlist = "/usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-110000.txt"
     else:
         return jsonify({'error': 'invalid type, must be files, dirs or subs'}), 400
-
+    
     def generate():
         ffuf_script_path = server_base_path/'scans/ffuf.py'
         process = subprocess.Popen(
