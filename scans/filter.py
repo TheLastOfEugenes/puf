@@ -4,7 +4,7 @@ from pathlib import Path
 # ── Filters ────────────────────────────────────────────────
 # Edit this list freely to add/remove status codes to drop
 FILTERED_STATUS_CODES = [
-    404,
+    404, 301
 ]
 
 # Add more filter functions here as needed, each takes a result dict
