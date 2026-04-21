@@ -48,6 +48,7 @@ def file_tree():
         tree[root] = {'dirs': dirs, 'files': files}
     return jsonify(tree)
 
+
 @app.route('/api/results/<target>')
 def nmap_results(target):
     print("fetching nmap", target)
@@ -255,7 +256,14 @@ def kill_scan(tab_id):
 def delete_path():
     data = request.get_json()
     rel_path = data.get('path', '')
+
+    # strip leading 'puf/' since base_path is already pointing to puf/
+    if rel_path.startswith('puf/') or rel_path == 'puf':
+        rel_path = rel_path[4:]
+
     target = (base_path / rel_path).resolve()
+
+    print(target)
 
     # safety check — must be inside base_path
     if not str(target).startswith(str(base_path.resolve())):
