@@ -407,8 +407,8 @@ function folderPopover(x, y, name, parts) {
 
   if (parts.length === 3) {
     var hostname = parts[2];
-    actions.push({ label: '▶ subs scan (http)',  fn: function() { launchFfuf('http://'  + hostname, 'subs'); }, primary: true });
-    actions.push({ label: '▶ subs scan (https)', fn: function() { launchFfuf('https://' + hostname, 'subs'); }, primary: true });
+    actions.push({ label: '▶ subdomains scan',  fn: function() { launchFfuf(hostname, 'subs'); }, primary: true });
+    // actions.push({ label: '▶ subs scan (https)', fn: function() { launchFfuf('https://' + hostname, 'subs'); }, primary: true });
   }
 
   if (parts.length === 4) {
@@ -469,7 +469,7 @@ function webScan(baseUrl, hostname) {
   // Start files, dirs and subs all at once
   launchFfuf(baseUrl, 'files');
   launchFfuf(baseUrl, 'dirs');
-  launchFfuf('http://' + hostname, 'subs');
+  launchFfuf(hostname, 'subs');
   closePopover();
 }
 
@@ -503,11 +503,11 @@ function stream(url, tabId) {
           viewNmap(target);
         } else {
           var filteredOutfile = outfile.replace(/\.json$/, '_filtered.json');
-          fetch('/api/results/file?path=' + encodeURIComponent(filteredOutfile))
+          fetch('/api/results/file?path=' + encodeURIComponent('puf/' + filteredOutfile))
             .then(function(r) { return r.json(); })
             .then(function(data) {
-              var useFile = (data && data.results) ? filteredOutfile : outfile;
-              var u = '/api/results/file?path=' + encodeURIComponent(useFile);
+              var useFile = (data && data.results && data.results.length) ? filteredOutfile : outfile;
+              var u = '/api/results/file?path=' + encodeURIComponent('puf/' + useFile);
               var label = tabs[tabId].label + ' (' + kind + ')';
               viewJson(u, label);
             });
