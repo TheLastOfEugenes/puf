@@ -296,19 +296,18 @@ function refreshTree() {
     .then(function(data) {
       var root = document.getElementById('tree-root');
       root.innerHTML = '';
-      buildTree(data, root, 0);
+      buildTree(data, root);  // no depth arg needed
     });
 }
 
-function buildTree(data, container, depth) {
-  var indent = (depth * 14) + 'px';
-
+function buildTree(data, container) {
   Object.keys(data).forEach(function(path) {
     var node = data[path];
-    var name = path.split('/').pop() || path;
     var parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+    var depth = parts.length - 1;
+    var indent = (depth * 14) + 'px';
+    var name = parts[parts.length - 1] || path;
 
-    // folder row
     var li = document.createElement('li');
     var label = document.createElement('div');
     label.className = 'tree-label';
@@ -322,13 +321,13 @@ function buildTree(data, container, depth) {
     });
     li.appendChild(label);
 
-    // files under this folder
     if (node.files && node.files.length) {
       node.files.forEach(function(f) {
+        var fileIndent = ((depth + 1) * 14) + 'px';
         var fli = document.createElement('li');
         var flabel = document.createElement('div');
         flabel.className = 'tree-label file';
-        flabel.style.paddingLeft = 'calc(' + indent + ' + 28px)';
+        flabel.style.paddingLeft = 'calc(' + fileIndent + ' + 14px)';
         flabel.innerHTML =
           '<svg class="ticon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0113.25 16h-9.5A1.75 1.75 0 012 14.25V1.75z"/></svg>' +
           '<span>' + f + '</span>';
@@ -337,11 +336,11 @@ function buildTree(data, container, depth) {
           filePopover(e.clientX, e.clientY, f, parts);
         });
         fli.appendChild(flabel);
-        li.appendChild(fli);
+        li.appendChild(fli);   // ← file added to li
       });
     }
 
-    container.appendChild(li);
+    container.appendChild(li);   // ← li added to container LAST
   });
 }
 
