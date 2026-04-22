@@ -85,7 +85,7 @@ def nmap_results(target):
                 'ip':    addr.get('addr') if addr is not None else '',
                 'ports': ports
             })
-        return jsonify(list(hosts.values()))
+        return jsonify(hosts)
     except ET.ParseError:
         return jsonify({'error': 'XML not ready yet'}), 204
     
