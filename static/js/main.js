@@ -132,6 +132,11 @@ function stream(url, tabId) {
       return;
     }
 
+    if (e.data.startsWith('AUTO_FILTER:')) {
+      autoFilter = e.data.split(':')[1] === 'true';
+      return;
+    }
+
     if (e.data === '[DONE]') {
       src.close();
       refreshTree();
@@ -465,7 +470,7 @@ function folderPopover(x, y, name, parts) {
     actions.push({ label: '▶ subdomains scan (https)', fn: function() { launchFfuf('https://' + hostname, 'subs'); }, primary: true });
   }
   if (parts.length === 4) {
-    var hostname2 = parts[1];
+    var hostname2 = parts[2];
     var sp = parts[3].split('_');
     var url = sp[0] + '://' + hostname2 + ':' + sp[1];
     actions.push({ label: '▶ files scan', fn: function() { launchFfuf(url, 'files'); } });
