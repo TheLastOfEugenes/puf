@@ -386,7 +386,7 @@ function showPopover(x, y, title, actions) {
   actions.forEach(function(a) {
     var btn = document.createElement('button');
     btn.className = 'popover-btn' + (a.primary ? ' primary' : '');
-    btn.textContent = a.label;
+    btn.innerHTML = a.label;
     btn.onclick = a.fn;
     el.appendChild(btn);
   });
@@ -508,10 +508,9 @@ function filePopover(x, y, name, parts) {
     allow_refilter = true
     if (allow_refilter || (!name.endsWith('_f.json') && !name.endsWith('_cf.json'))) {
       actions.push({
-        label: '⧩ Custom filter',
-        fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, name),
-        style: 'color: orange'
-      });
+      label: '<img src="/' + ICONS['icon_filter'] + '" class="tree-icon" style="filter:invert(60%) sepia(100%) saturate(500%) hue-rotate(0deg);"> Custom filter',
+      fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, name),
+    });
     }
   }
 
