@@ -9,8 +9,7 @@ from custom_filter import run_custom_filter
 import configparser
 
 conf = configparser.ConfigParser()
-conf.read('puf.conf')
-
+conf.read(Path(__file__).parent / 'puf.conf')
 
 processes = {}
 working_path = Path.cwd() # ./
