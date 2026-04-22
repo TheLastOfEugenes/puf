@@ -146,6 +146,10 @@ def stream_ffuf():
         url = '%s%s' % ('http://', url)
     parsed = urlparse(url)
 
+    print(parsed)
+
+    scheme = parsed.scheme
+
     if not parsed.port:
         if parsed.scheme == "http":
             port = 80
@@ -175,7 +179,7 @@ def stream_ffuf():
     elif type == "subs":
         outpath = base_path/f"{parsed.hostname}"/f"{parsed.hostname}"
         outpath.mkdir(parents=True, exist_ok=True)
-        outfile = outpath/"subs.json"
+        outfile = outpath/f"{scheme}_subs.json"
         wordlist = "/usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-110000.txt"
     else:
         return jsonify({'error': 'invalid type, must be files, dirs or subs'}), 400

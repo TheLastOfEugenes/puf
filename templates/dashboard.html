@@ -407,8 +407,8 @@ function folderPopover(x, y, name, parts) {
 
   if (parts.length === 3) {
     var hostname = parts[2];
-    actions.push({ label: '▶ subdomains scan',  fn: function() { launchFfuf('http://'+hostname, 'subs'); }, primary: true });
-    actions.push({ label: '▶ subs scan (https)', fn: function() { launchFfuf('https://' + hostname, 'subs'); }, primary: true });
+    actions.push({ label: '▶ subdomains scan (http)',  fn: function() { launchFfuf('http://' + hostname, 'subs'); }, primary: true });
+    actions.push({ label: '▶ subdomains scan (https)', fn: function() { launchFfuf('https://' + hostname, 'subs'); }, primary: true });
   }
 
   if (parts.length === 4) {
