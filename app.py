@@ -7,6 +7,7 @@ import shutil
 sys.path.insert(0, str(Path(__file__).parent / 'scans'))
 from custom_filter import run_custom_filter
 import configparser
+import shlex
 
 conf = configparser.ConfigParser()
 conf.read(Path(__file__).parent / 'puf.conf')
@@ -223,26 +224,26 @@ def stream_ffuf():
         if type == 'subs':
             custom_cmd = get_command('fuzz_subs')
             if custom_cmd:
-                cmd = custom_cmd.format(
+                cmd = shlex.split(custom_cmd.format(
                     target=target,
                     hostname=parsed.hostname,
                     wordlist=wordlist,
                     outfile=str(outfile)
-                ).split()
+                ))
             else:
                 cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
-                       target, parsed.hostname, wordlist, str(outfile), 'True']
+                    target, parsed.hostname, wordlist, str(outfile), 'True']
         else:
             custom_cmd = get_command('fuzz')
             if custom_cmd:
-                cmd = custom_cmd.format(
+                cmd = shlex.split(custom_cmd.format(
                     target=target,
                     wordlist=wordlist,
                     outfile=str(outfile)
-                ).split()
+                ))
             else:
                 cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
-                       target, parsed.hostname, wordlist, str(outfile), 'False']
+                    target, parsed.hostname, wordlist, str(outfile), 'False']
 
         print("CMD:", cmd, flush=True)
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
