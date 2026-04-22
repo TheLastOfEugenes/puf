@@ -58,7 +58,6 @@ def nmap_results(target):
     parsed = urlparse(url)
 
     target_path = base_path / parsed.hostname
-    print(target_path)
     if not target_path.exists():
         return jsonify([])
     nmap_path = target_path / 'nmap.xml'
@@ -86,7 +85,7 @@ def nmap_results(target):
                 'ip':    addr.get('addr') if addr is not None else '',
                 'ports': ports
             })
-        return jsonify(hosts)
+        return jsonify(list(hosts.values()))
     except ET.ParseError:
         return jsonify({'error': 'XML not ready yet'}), 204
     
