@@ -151,6 +151,7 @@ function stream(url, tabId) {
             viewNmap(target);
         } else {
             var label = tabs[tabId].label + ' (' + kind + ')';
+            var label = tabs[tabId].label + ' (' + kind + ')';
             if (autoFilter) {
             var filteredOutfile = outfile.replace(/\.json$/, '_f.json');
             fetch('/api/results/file?path=' + encodeURIComponent('puf/' + filteredOutfile))
@@ -161,9 +162,8 @@ function stream(url, tabId) {
                 viewJson(u, label);
                 });
             } else {
-            // auto_filter disabled — open the raw scan output directly
-            var u = '/api/results/file?path=' + encodeURIComponent('puf/' + outfile);
-            viewJson(u, label);
+                var u = '/api/results/file?path=' + encodeURIComponent('puf/' + outfile);
+                viewJson(u, label);
             }
         }
     }
