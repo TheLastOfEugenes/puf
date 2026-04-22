@@ -149,7 +149,7 @@ function stream(url, tabId) {
         if (kind === 'nmap') {
           var target = outfile.split('/')[0];
           viewNmap(target);
-        } else {
+        } else if (autoFilter) {
           var label = tabs[tabId].label + ' (' + kind + ')';
           var filteredOutfile = outfile.replace(/\.json$/, '_f.json');
           fetch('/api/results/file?path=' + encodeURIComponent('puf/' + filteredOutfile))
