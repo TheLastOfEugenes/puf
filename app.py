@@ -95,20 +95,23 @@ def config_icons():
 
 @app.route('/api/results/<target>')
 def nmap_results(target):
-    
     url = target
     if not (url.startswith("http://") or url.startswith("https://")):
-        url = '%s%s' % ("http://", url)
+        url = 'http://' + url
     parsed = urlparse(url)
-
     root = get_root_domain(parsed.hostname)
 
     target_path = base_path / root
     if not target_path.exists():
         return jsonify([])
-    nmap_path = target_path / 'nmap.xml'
-    print(nmap_path)
-    if not nmap_path.exists() or not nmap_path.read_text().strip():
+
+    # find any xml file instead of hardcoded nmap.xml
+    xml_files = list(target_path.glob('*.xml'))
+    if not xml_files:
+        return jsonify([])
+    nmap_path = xml_files[0]
+
+    if not nmap_path.read_text().strip():
         return jsonify([])
 
     try:

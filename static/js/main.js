@@ -495,7 +495,7 @@ function buildTree(data, container) {
         flabel.addEventListener('dblclick', function(e) {
           e.stopPropagation();
           var filePath = 'puf/' + parts.slice(1).join('/') + '/' + f;
-          if (f === 'nmap.xml') {
+          if (f.endsWith('.xml')) {
             viewNmap(parts[1]);
           } else if (f.endsWith('.json')) {
             viewJson('/api/results/file?path=' + encodeURIComponent(filePath), f);
@@ -550,7 +550,7 @@ function folderPopover(x, y, name, parts) {
 function filePopover(x, y, name, parts) {
   var actions = [];
   var filePath = 'puf/' + parts.slice(1).join('/') + '/' + name;
-  if (name === 'nmap.xml') {
+  if (name.endsWith('.xml')) {
     actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[1]); } });
   } else if (name.endsWith('.json')) {
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
