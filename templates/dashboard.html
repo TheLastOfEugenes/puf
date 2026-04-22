@@ -32,6 +32,16 @@
     <div class="tabbar" id="tabbar">
       <span class="tabbar-empty" id="tabbar-empty">No scans yet</span>
     </div>
+    <div id="bottom-bar">
+      <div id="cmd-log">
+        <div class="bar-title">Command Log</div>
+        <div id="cmd-log-list"></div>
+      </div>
+      <div id="cmd-panel">
+        <div class="bar-title">Commands</div>
+        <div id="cmd-panel-list"></div>
+      </div>
+    </div>
     <div class="output-area" id="output-area">
       <div class="empty-hint" id="empty-hint">
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -98,6 +108,17 @@
         <button onclick="runCustomFilter()"
           style="padding:8px 16px; background:orange; border:none; border-radius:4px;
           color:#000; font-weight:bold; cursor:pointer;">Run Filter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cmd-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;width:480px;display:flex;flex-direction:column;gap:12px;">
+      <div style="font-size:var(--xs);color:var(--muted);">Editing: <span id="cmd-edit-key" style="color:var(--fg);"></span></div>
+      <textarea id="cmd-edit-input" rows="4" style="font-family:'JetBrains Mono',monospace;font-size:var(--xs);background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--r);padding:8px;resize:vertical;"></textarea>
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn-ghost" onclick="closeCmdEditModal()">Cancel</button>
+        <button class="btn-ghost primary" id="cmd-edit-save">Save</button>
       </div>
     </div>
   </div>

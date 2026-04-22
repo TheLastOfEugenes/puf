@@ -115,6 +115,7 @@ function setPaneContent(id, html) {
 
 // ── SSE ───────────────────────────────────────
 function stream(url, tabId) {
+  logCommand(tabId, '', cmd || url);
   const src = new EventSource(url);
   src.onmessage = function(e) {
 
@@ -138,6 +139,7 @@ function stream(url, tabId) {
     }
 
     if (e.data === '[DONE]') {
+      updateLogDot(tabId, 'done');
       src.close();
       refreshTree();
 
@@ -188,6 +190,12 @@ function stream(url, tabId) {
       }
       return;
     }
+
+    src.onerror = function() {
+      src.close();
+      setDot(tabId, 'error');
+      updateLogDot(tabId, 'error');
+    };
 
     appendLine(tabId, e.data);
   };
@@ -644,6 +652,121 @@ function deletePath(path, label) {
       body: JSON.stringify({ path: path })
     }).then(function() { refreshTree(); });
   });
+}
+
+// ── Command Log ───────────────────────────────
+function logCommand(tabId, key, cmd) {
+  var list = document.getElementById('cmd-log-list');
+  var now  = new Date();
+  var time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+  var entry = document.createElement('div');
+  entry.className = 'cmd-log-entry';
+  entry.id = 'cmdlog_' + tabId;
+  entry.innerHTML =
+    '<span class="tab-dot running" id="cmdlog_dot_' + tabId + '"></span>' +
+    '<span class="cmd-time">' + time + '</span>' +
+    '<span class="cmd-text" title="' + cmd.replace(/"/g,'&quot;') + '" onclick="showCmdPopover(event,\'' + tabId + '\')">' + cmd + '</span>';
+
+  // insert above other running entries, below done/error entries
+  var entries = list.querySelectorAll('.cmd-log-entry');
+  var firstRunning = null;
+  entries.forEach(function(e) {
+    var dot = e.querySelector('.tab-dot');
+    if (dot && dot.classList.contains('running') && !firstRunning) firstRunning = e;
+  });
+  if (firstRunning) {
+    list.insertBefore(entry, firstRunning);
+  } else {
+    list.appendChild(entry);
+  }
+
+  list.scrollTop = list.scrollHeight;
+}
+
+function updateLogDot(tabId, state) {
+  var dot = document.getElementById('cmdlog_dot_' + tabId);
+  if (dot) {
+    dot.className = 'tab-dot ' + state;
+    // if done/error, move entry above running ones
+    if (state === 'done' || state === 'error') {
+      var list  = document.getElementById('cmd-log-list');
+      var entry = document.getElementById('cmdlog_' + tabId);
+      var firstRunning = null;
+      list.querySelectorAll('.cmd-log-entry').forEach(function(e) {
+        var d = e.querySelector('.tab-dot');
+        if (d && d.classList.contains('running') && !firstRunning) firstRunning = e;
+      });
+      if (firstRunning && entry) list.insertBefore(entry, firstRunning);
+    }
+  }
+}
+
+function showCmdPopover(e, tabId) {
+  var entry = document.getElementById('cmdlog_' + tabId);
+  if (!entry) return;
+  var cmd = entry.querySelector('.cmd-text').getAttribute('title');
+  showPopover(e.clientX, e.clientY, 'Command', [
+    { label: '⎘ Copy', fn: function() { navigator.clipboard.writeText(cmd); closePopover(); } }
+  ]);
+}
+
+// ── Command Panel ─────────────────────────────
+var cmdEdits = {};  // stores any session overrides
+
+function initCmdPanel() {
+  fetch('/api/commands/get')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('cmd-panel-list');
+      list.innerHTML = '';
+      ['nmap','fuzz','fuzz_subs'].forEach(function(key) {
+        var raw = data[key] || '';
+        // strip wordlist and outfile for preview
+        var preview = raw
+          .replace(/-w\s+\S+/g, '-w {wordlist}')
+          .replace(/-o\s+\S+/g, '-o {outfile}');
+        var row = document.createElement('div');
+        row.className = 'cmd-panel-row';
+        row.id = 'cmdrow_' + key;
+        row.innerHTML =
+          '<span class="cmd-key">' + key + '</span>' +
+          '<span class="cmd-preview" title="' + preview + '">' + preview + '</span>' +
+          '<button class="btn-ghost" onclick="editCmd(\'' + key + '\')">✎</button>' +
+          '<button class="btn-ghost" onclick="runCmdFromPanel(\'' + key + '\')">▶</button>';
+        list.appendChild(row);
+      });
+    });
+}
+
+function editCmd(key) {
+  fetch('/api/commands/get')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var current = cmdEdits[key] || data[key] || '';
+      var modal = document.getElementById('cmd-edit-modal');
+      document.getElementById('cmd-edit-key').textContent = key;
+      document.getElementById('cmd-edit-input').value = current;
+      document.getElementById('cmd-edit-save').onclick = function() {
+        var val = document.getElementById('cmd-edit-input').value.trim();
+        cmdEdits[key] = val;
+        fetch('/api/commands/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: key, cmd: val })
+        }).then(function() { initCmdPanel(); closeCmdEditModal(); });
+      };
+      modal.style.display = 'flex';
+    });
+}
+
+function closeCmdEditModal() {
+  document.getElementById('cmd-edit-modal').style.display = 'none';
+}
+
+function runCmdFromPanel(key) {
+  // TODO: hook to target input or show a target prompt
+  alert('Use the tree or form to launch scans — this will be wired up soon.');
 }
 
 // ── Init ──────────────────────────────────────
