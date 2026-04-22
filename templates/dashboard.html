@@ -709,8 +709,11 @@ function deletePath(path, label) {
 var ICONS = {};
 fetch('/api/config/icons')
   .then(function(r) { return r.json(); })
-  .then(function(data) { ICONS = data; });
-
+  .then(function(data) {
+    ICONS = data;
+    refreshTree();                  // only runs after ICONS is ready
+    setInterval(refreshTree, 5000);
+  });
 
 function getFolderIcon(depth) {
   var src = ICONS['icon_depth_' + depth] || ICONS['icon_depth_0'];
