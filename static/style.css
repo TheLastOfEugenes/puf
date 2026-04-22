@@ -178,3 +178,12 @@ html, body { height: 100%; font-family: var(--font); font-size: var(--sm); color
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
+
+.tree-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  margin-right: 4px;
+  opacity: 0.8;
+  filter: invert(var(--icon-invert, 0));  /* flip to white if dark theme */
+}

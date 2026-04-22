@@ -428,7 +428,7 @@ function buildTree(data, container) {
     label.style.paddingLeft = 'calc(' + indent + ' + 12px)';
     label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%';
     label.innerHTML =
-      '<svg class="ticon" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1h5.5c.966 0 1.75.784 1.75 1.75v.5h3.5A1.75 1.75 0 0114.25 5v7.25A1.75 1.75 0 0112.5 14H1.75A1.75 1.75 0 010 12.25V2.75C0 1.784.784 1 1.75 1z"/></svg>' +
+      getFolderIcon(depth) +
       '<span style="flex:1">' + name + '</span>' +
       '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '\',\'' + name + '\')">&#x2715;</button>';
     label.addEventListener('click', function(e) {
@@ -446,7 +446,7 @@ function buildTree(data, container) {
         flabel.style.paddingLeft = 'calc(' + fileIndent + ' + 14px)';
         flabel.style.cssText = 'padding-left:calc(' + fileIndent + ' + 14px);display:flex;align-items:center;width:100%';
         flabel.innerHTML =
-          '<svg class="ticon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0113.25 16h-9.5A1.75 1.75 0 012 14.25V1.75z"/></svg>' +
+          getFileIcon(f) +
           '<span style="flex:1">' + f + '</span>' +
           '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '/' + f + '\',\'' + f + '\')">&#x2715;</button>';
         flabel.addEventListener('click', function(e) {
@@ -705,6 +705,24 @@ function deletePath(path, label) {
       body: JSON.stringify({ path: path })
     }).then(function() { refreshTree(); });
   });
+}
+
+var ICONS = {};
+fetch('/api/config/icons')
+  .then(function(r) { return r.json(); })
+  .then(function(data) { ICONS = data; });
+
+
+function getFolderIcon(depth) {
+  var src = ICONS['icon_depth_' + depth] || ICONS['icon_depth_0'];
+  return '<img src="/' + src + '" class="tree-icon">';
+}
+
+function getFileIcon(name) {
+  var key = name.endsWith('.json') ? 'icon_file_json'
+          : name.endsWith('.xml')  ? 'icon_file_xml'
+          : 'icon_file_default';
+  return '<img src="/' + ICONS[key] + '" class="tree-icon">';
 }
 
 // ── Init ──────────────────────────────────────

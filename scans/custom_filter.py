@@ -31,8 +31,8 @@ def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
 
     results = [r for r in results if
         r.get('status') not in status_codes and
-        r.get('words') not in word_counts and
-        r.get('length') not in lengths]
+        int(r.get('words', -1)) not in [int(x) for x in word_counts] and
+        int(r.get('length', -1)) not in [int(x) for x in lengths]]
 
     output = {**data, 'results': results} if isinstance(data, dict) and 'results' in data else results
 

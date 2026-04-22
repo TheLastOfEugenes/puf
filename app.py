@@ -6,6 +6,11 @@ import xml.etree.ElementTree as ET
 import shutil
 sys.path.insert(0, str(Path(__file__).parent / 'scans'))
 from custom_filter import run_custom_filter
+import configparser
+
+conf = configparser.ConfigParser()
+conf.read('puf.conf')
+
 
 processes = {}
 working_path = Path.cwd() # ./
@@ -50,6 +55,10 @@ def file_tree():
         tree[root] = {'dirs': dirs, 'files': files}
     return jsonify(tree)
 
+@app.route('/api/config/icons')
+def config_icons():
+    icons = dict(conf['icons']) if 'icons' in conf else {}
+    return jsonify(icons)
 
 @app.route('/api/results/<target>')
 def nmap_results(target):
