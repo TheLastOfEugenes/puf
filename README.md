@@ -1,11 +1,3 @@
-
-[[#Presentation of results]]
-[[#Quick commands]]
-[[#Presentation of results]]
-[[#Filtering]]
-[[#Misc]]
-
-
 # Presentation
 Ports and Urls Filter is a tool supposed to help you fuzz targets. Its main functionalities are
 - Presentation of the results
@@ -38,7 +30,7 @@ ffuf -k -c -ac -u "$target" -H "Host: FUZZ.$host" -w "$wordlist" -o "$outfile" "
 ```
 
 As soon as a target is entered in the field, those 4 scans are started: nmap on the target, subdomains scan on the host and ffuf scan on the target url for files or directories.
-![[adding_target.png]]
+![[https://github.com/TheLastOfEugenes/puf/master/resources/adding_target.png]]
 
 The progression is shown for nmap as raw output, for the fuzzing scans as a progress bar:
 ![[progress_bar.png]]
