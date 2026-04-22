@@ -306,4 +306,6 @@ def index():
     return render_template('dashboard.html')
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5454, threaded=True)
+    host = conf.get('server', 'host', fallback='127.0.0.1')
+    port = conf.getint('server', 'port', fallback=5454)
+    app.run(host=host, port=port, threaded=True)
