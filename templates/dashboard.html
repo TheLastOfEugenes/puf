@@ -292,10 +292,16 @@ function viewJson(apiUrl, label) {
         return;
       }
 
+      var isSubs = results.length > 0 && results[0].input && results[0].input.FUZZ && !results[0].url.includes(results[0].input.FUZZ);
+
       var rows = '';
       results.forEach(function(r, i) {
+        var display = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
+        var host = isSubs ? new URL(r.url).hostname : null;
+
         rows += '<tr class="result-row" id="rrow_' + id + '_' + i + '" onclick="resultRowClick(event, \'' + r.url + '\')">' +
-          '<td><a href="' + r.url + '" target="_blank" class="result-url">' + r.url + '</a></td>' +
+          '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
+          (isSubs ? '<td class="muted">' + host + '</td>' : '') +
           '<td class="status-' + Math.floor(r.status/100) + 'xx">' + r.status + '</td>' +
           '<td class="muted">' + r.length + '</td>' +
           '<td class="muted">' + r.words + '</td>' +
