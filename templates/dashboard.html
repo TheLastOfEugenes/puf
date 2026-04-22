@@ -505,17 +505,11 @@ function filePopover(x, y, name, parts) {
     actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
 
     // was restricted to specific names — now any .json that isn't already filtered
-    if (!name.endsWith('_filtered.json') && !name.endsWith('_custom_filtered.json')) {
+    allow_refilter = true
+    if (allow_refilter || (!name.endsWith('_f.json') && !name.endsWith('_cf.json'))) {
       actions.push({
         label: '⧩ Custom filter',
         fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, name),
-        style: 'color: orange'
-      });
-    } else {
-      re_name = "re" + name
-      actions.push({
-        label: '⧩ Custom filter',
-        fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, re_name),
         style: 'color: orange'
       });
     }
@@ -646,8 +640,8 @@ function stream(url, tabId) {
           var target = outfile.split('/')[0];
           viewNmap(target);
         } else {
-          var filteredOutfile = outfile.replace(/\.json$/, '_filtered.json');
           var label = tabs[tabId].label + ' (' + kind + ')'; 
+          var filteredOutfile = outfile.replace(/\.json$/, '_f.json');
           fetch('/api/results/file?path=' + encodeURIComponent('puf/' + filteredOutfile))
             .then(function(r) { return r.json(); })
             .then(function(data) {

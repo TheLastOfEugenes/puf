@@ -1,6 +1,7 @@
 import json, sys
 from pathlib import Path
 from collections import Counter
+from utils import get_output_path
 
 # ── Smart Filtering ─────────────────────────────────────────
 SMART_FILTER_ENABLED = True
@@ -58,7 +59,7 @@ def filter_results(results):
 
 def process_file(input_path):
     input_path = Path(input_path)
-    output_path = input_path.with_name(input_path.stem + '_filtered.json')
+    output_path = get_output_path(input_path, custom=False)
 
     with open(input_path) as f:
         data = json.load(f)
@@ -76,3 +77,5 @@ def process_file(input_path):
         json.dump(output, f, indent=2)
 
     return str(output_path)
+
+process_file(sys.argv[1])
