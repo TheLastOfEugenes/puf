@@ -258,15 +258,22 @@ function stream(url, tabId) {
 }
 
 // ── Launchers ─────────────────────────────────
+function rootDomain(input) {
+  // strip scheme if present
+  var host = input.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+  // strip subdomains — keep only last two parts (domain.tld)
+  var parts = host.split('.');
+  return parts.length > 2 ? parts.slice(-2).join('.') : host;
+}
+
 function launchNmapForm(e) {
   e.preventDefault();
   var t = document.getElementById('target-input').value.trim();
   if (!t) return;
-  launchNmap(t);
-  if (!isIp(t)) {
-    // domain name — start full web scan on both http and https
-    webScan(t, t);
-    // webScan('https://' + t, t);
+  var root = rootDomain(t);
+  launchNmap(root);
+  if (!isIp(root)) {
+    webScan('http://' + root, root);
   }
 }
 
@@ -275,8 +282,9 @@ function isIp(str) {
 }
 
 function launchNmap(target) {
-  var id = createTab(target, 'nmap');
-  stream('/api/scan/nmap?target=' + encodeURIComponent(target) + '&tabId=' + id, id);
+  var clean = rootDomain(target);
+  var id = createTab(clean, 'nmap');
+  stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id);
   closePopover();
 }
 
@@ -391,7 +399,7 @@ function showPopover(x, y, title, actions) {
     el.appendChild(btn);
   });
   p.style.display = 'block';
-  p.style.left = x + 'px';
+  p.style.left = (x + 4) + 'px';  // shifted 6px right
   p.style.top = y + 'px';
 }
 
@@ -525,7 +533,7 @@ function filePopover(x, y, name, parts) {
   }
 
   // "View file" available on every file
-  actions.push({ label: 'View file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
+  actions.push({ label: 'View raw file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
 
   if (actions.length) showPopover(x, y, name, actions);
 }
