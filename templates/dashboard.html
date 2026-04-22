@@ -246,20 +246,22 @@ function viewNmap(target) {
         setPaneContent(id, '<div class="empty-hint"><p>No results yet</p></div>');
         return;
       }
-      var isSubs = results.length > 0 && results[0].input && results[0].input.FUZZ && !results[0].url.includes(results[0].input.FUZZ);
 
       var rows = '';
-      results.forEach(function(r, i) {
-        var display = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
-        rows += '<tr class="result-row" id="rrow_' + id + '_' + i + '" onclick="resultRowClick(event, \'' + r.url + '\')">' +
-          '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
-          '<td class="status-' + Math.floor(r.status/100) + 'xx">' + r.status + '</td>' +
-          '<td class="muted">' + r.length + '</td>' +
-          '<td class="muted">' + r.words + '</td>' +
-          '<td class="muted">' + r.lines + '</td>' +
-          '<td><button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + i + '\')" title="Flag as target">⚑</button></td>' +
-          '</tr>';
+      data.forEach(function(host) {
+        host.ports.forEach(function(p, i) {
+          rows += '<tr>' +
+            (i === 0 ? '<td rowspan="' + host.ports.length + '">' + host.ip + '</td>' : '') +
+            '<td>' + p.port + '</td>' +
+            '<td>' + p.protocol + '</td>' +
+            '<td>' + p.state + '</td>' +
+            '<td>' + p.service + '</td>' +
+            '<td class="muted">' + (p.version || '') + '</td>' +
+            '<td><button class="flag-btn" onclick="toggleFlag(this, \'nrow_' + id + '_' + i + '\')" title="Flag as target">⚑</button></td>' +
+            '</tr>';
+        });
       });
+
       setPaneContent(id,
         '<div class="pane-table">' +
         '<table class="rtable"><thead><tr>' +
