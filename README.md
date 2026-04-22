@@ -30,41 +30,40 @@ ffuf -k -c -ac -u "$target" -H "Host: FUZZ.$host" -w "$wordlist" -o "$outfile" "
 ```
 
 As soon as a target is entered in the field, those 4 scans are started: nmap on the target, subdomains scan on the host and ffuf scan on the target url for files or directories.
-![target](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/adding_target.png)
-![[https://github.com/TheLastOfEugenes/puf/master/resources/adding_target.png]]
+![adding_target](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/adding_target.png)
 
 The progression is shown for nmap as raw output, for the fuzzing scans as a progress bar:
-![[progress_bar.png]]
+![progress_bar](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/progress_bar.png)
 
 ## Presentation of results
 
 Not only does the application create a file system to store the results, it also displays a tree-style presentation of the files so one can open them easily and offers a presentation of the results by handling json output to present the output of a ffuf scan:
-![[ffuf_results.png]]
+![ffuf_results](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/ffuf_results.png)
 
 or the nmap scans and their XML output:
-![[nmap_results.png]]
+![nmap_results](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/nmap_results.png)
 
 On top of starting a scan, the app offers to start a scan via multiple ways:
 - by clicking on a row of the json result
-![[nmap_row_clickable.png]]
+![nmap_row_clickable](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/nmap_row_clickable.png)
 
 When clicking on the row, a few options are being presented to the user: start a directories scan, start a files scan, start a web scan (being directory, files and subdirectories scan at the same time, useful when starting a scan on a newly found subdomain for example).
 
-![[web_scan_progress.png]]
+![web_scan_progress](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/web_scan_progress.png)
 - by clicking on a row of a nmap result
-![[json_row_clickable.png]]
+![json_row_clickable](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/json_row_clickable.png)
 - By clicking on the tree:
 	- clicking on the target (identified by a computer icon) offers to start a nmap scan
 	- clicking on the host (identified by a web icon) offers to start a subdomain scan using either http or https scheme
 	- clicking on the service (identified by stacked squares and named scheme_port) offers to start either a web, files or directories scan, using either http or https
 (target)
-![[target_scan.png]]
+![target](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/target_scan.png)
 (host)
-![[host_scan.png]]
+![host_scan](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/host_scan.png)
 (service)
-![[service_scan.png]]
+![service_scan](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/service_scan.png)
 (other sevice)
-![[other_service_scan.png]]
+![other_service_scan](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/other_service_scan.png)
 
 
 Once the scans have be ran, clicking on a file will open the file and allow the reading of it. The supported types are
@@ -72,12 +71,12 @@ Once the scans have be ran, clicking on a file will open the file and allow the 
 - json (for ffuf scans)
 - any (displayed raw in a tab)
 (here is raw)
-![[open_file_raw.png]]
+![open_file_raw](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/open_file_raw.png)
 (the display result)
-![[nmap_raw_result.png]]
+![nmap_raw_result](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/nmap_raw_result.png)
 
 and, when clicking on any other supported file type:
-![[json_file_clickable.png]]
+![json_file_clickable](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/json_file_clickable.png)
 
 
 ## Filtering
@@ -91,7 +90,7 @@ When clicking on a json file then "custom filter" the user will be prompted with
 - add response statuses to filter out (example: 404, 301)
 - add content length to filter out (example: if all error responses have the length 1812, you can filter out all responses with length 1812)
 - add words count filter.
-![[json_file_filter.png]]
+![json_file_filter](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/json_file_filter.png)
 
 The smart filtering works as follow: files are gathered by status code, words counts, response's length. If more than 1000 (this limit can be modified using the input) results are in the same category then all these are filtered out, leaving only the ones that differ.
 
@@ -102,10 +101,10 @@ This filter is activated by default, filtering any result found through a ffuf s
 ### Functionnalities
 On top of this, the application offers other functionnalities:
 - a flag appear on the right of xml and json results. If pressed, the whole row is marked red as a reminder this could be an interesting target.
-![[flag_row.png]]
+![flag_row](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/flag_row.png)
 
 When a process has been started, if you wish to stop the process before it naturally ends, you can click on the red square next to the cross.
-![[kill_process.png]]
+![kill_process](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/kill_process.png)
 
 ### Other commands
 As part of the package, in the `aliases` file, you will find the bash commands that allow using these commands without having to use the gui entirely, the output is still readable using cat or jq. The filtering function, on the other hand, hasn't been uploaded yet, it is reserved to the gui for now.
