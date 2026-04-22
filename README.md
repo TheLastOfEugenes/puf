@@ -123,3 +123,11 @@ When a process has been started, if you wish to stop the process before it natur
 
 ### Other commands
 As part of the package, in the `aliases` file, you will find the bash commands that allow using these commands without having to use the gui entirely, the output is still readable using cat or jq. The filtering function, on the other hand, hasn't been uploaded yet, it is reserved to the gui for now.
+
+### config file
+The file `puf.conf` allows you to change different specifications for the appliation such as:
+- icons: icons for the display of targets, hosts, files, ...
+- wordlists' locations: default are written there and in the code but if you want to change it to something you have locally simply change the wordlists.
+- commands: default commands are written there the same way, if you want to use a different command it is possible. Simply make sure your commands are compatible with the app.
+- auto-filter: activates or deactivates the auto filtering of output, disabling it is recommended if you plan on using a command that handle the filtering part such as katana or ffuf.
+- server: specify where the server should be served.
