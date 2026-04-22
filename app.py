@@ -225,7 +225,7 @@ def stream_ffuf():
             outfile = outpath/f"{path}dirs.json"
             wordlist = "/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-directories-lowercase.txt"
     elif type == "subs":
-        outpath = base_path/f"{parsed.hostname}"/f"{parsed.hostname}"
+        outpath = base_path/f"{root}"/f"{parsed.hostname}"
         outpath.mkdir(parents=True, exist_ok=True)
         outfile = outpath/f"{scheme}_subs.json"
         wordlist = "/usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-110000.txt"
