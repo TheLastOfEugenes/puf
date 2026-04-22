@@ -482,7 +482,7 @@ function filePopover(x, y, name, parts) {
   } else if (name.endsWith('.json')) {
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
     actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
-    actions.push({ label: 'View as file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
+    actions.push({ label: 'View raw file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
     if (!name.endsWith('_f.json') && !name.endsWith('_cs.json')) {
       actions.push({
         label: '<img src="/' + ICONS['icon_filter'] + '" class="tree-icon" style="filter:invert(60%) sepia(100%) saturate(500%) hue-rotate(0deg);"> Custom filter',
@@ -490,7 +490,7 @@ function filePopover(x, y, name, parts) {
       });
     }
   } else {
-    actions.push({ label: 'View as file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
+    actions.push({ label: 'View raw file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
   }
   if (actions.length) showPopover(x, y, name, actions);
 }
