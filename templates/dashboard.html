@@ -61,6 +61,57 @@
     </div>
   </div>
 
+  <!-- filtering popover -->
+<div id="filter-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#1e1e2e; border:1px solid #444; border-radius:8px; padding:24px;
+    min-width:380px; max-width:480px; color:#cdd6f4;">
+    <h3 style="margin:0 0 16px">Custom Filter</h3>
+
+    <label style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+      <input type="checkbox" id="fm-smart-enabled" checked onchange="toggleSmartLimit()">
+      Smart filtering
+    </label>
+
+    <label style="display:block; margin-bottom:12px;">
+      Smart filter limit
+      <input id="fm-smart-limit" type="number" value="1000"
+        style="display:block; width:100%; margin-top:4px; padding:6px;
+        background:#313244; border:1px solid #555; border-radius:4px; color:#cdd6f4;">
+    </label>
+
+    <label style="display:block; margin-bottom:12px;">
+      Filter status codes <span style="color:#888">(e.g. 404, 301)</span>
+      <input id="fm-status" type="text" placeholder="404, 301"
+        style="display:block; width:100%; margin-top:4px; padding:6px;
+        background:#313244; border:1px solid #555; border-radius:4px; color:#cdd6f4;">
+    </label>
+
+    <label style="display:block; margin-bottom:12px;">
+      Filter word counts <span style="color:#888">(e.g. 12, 15)</span>
+      <input id="fm-words" type="text" placeholder=""
+        style="display:block; width:100%; margin-top:4px; padding:6px;
+        background:#313244; border:1px solid #555; border-radius:4px; color:#cdd6f4;">
+    </label>
+
+    <label style="display:block; margin-bottom:20px;">
+      Filter lengths <span style="color:#888">(e.g. 142, 500)</span>
+      <input id="fm-lengths" type="text" placeholder=""
+        style="display:block; width:100%; margin-top:4px; padding:6px;
+        background:#313244; border:1px solid #555; border-radius:4px; color:#cdd6f4;">
+    </label>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button onclick="closeFilterModal()"
+        style="padding:8px 16px; background:#313244; border:none; border-radius:4px;
+        color:#cdd6f4; cursor:pointer;">Cancel</button>
+      <button onclick="runCustomFilter()"
+        style="padding:8px 16px; background:orange; border:none; border-radius:4px;
+        color:#000; font-weight:bold; cursor:pointer;">Run Filter</button>
+    </div>
+  </div>
+</div>
+
 </div>
 <script>
 // ── State ─────────────────────────────────────
@@ -448,13 +499,77 @@ function filePopover(x, y, name, parts) {
 
   if (name === 'nmap.xml') {
     actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[1]); } });
-  } else if (name.endsWith('.json')) {
-    var filePath = parts.join('/') + '/' + name;
-    var u = '/api/results/file?path=' + encodeURIComponent(filePath);
-    actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
+  } else if (name.endsWith('.json') && !name.endsWith('_filtered.json')) {
+    var filterPath = parts.join('/') + '/' + name;
+    actions.push({
+      label: '⧩ Custom filter',
+      fn: function() { openFilterModal(filterPath, name); },
+      style: 'color: orange'
+    });
   }
 
   if (actions.length) showPopover(x, y, name, actions);
+}
+
+var _filterTargetPath = null;
+var _filterTargetName = null;
+
+function openFilterModal(path, name) {
+  _filterTargetPath = path;
+  _filterTargetName = name;
+  document.getElementById('fm-smart-enabled').checked = true;
+  document.getElementById('fm-smart-limit').value = 1000;
+  document.getElementById('fm-smart-limit').disabled = false;
+  document.getElementById('fm-status').value = '';
+  document.getElementById('fm-words').value = '';
+  document.getElementById('fm-lengths').value = '';
+  var modal = document.getElementById('filter-modal');
+  modal.style.display = 'flex';
+  closePopover();
+}
+
+function closeFilterModal() {
+  document.getElementById('filter-modal').style.display = 'none';
+}
+
+function toggleSmartLimit() {
+  var enabled = document.getElementById('fm-smart-enabled').checked;
+  document.getElementById('fm-smart-limit').disabled = !enabled;
+  document.getElementById('fm-smart-limit').style.opacity = enabled ? '1' : '0.4';
+}
+
+function parseList(val) {
+  return val.split(',').map(function(v) { return v.trim(); })
+    .filter(Boolean).map(Number).filter(function(n) { return !isNaN(n); });
+}
+
+function runCustomFilter() {
+  var payload = {
+    path: _filterTargetPath,
+    smart_enabled: document.getElementById('fm-smart-enabled').checked,
+    smart_limit: parseInt(document.getElementById('fm-smart-limit').value) || 1000,
+    status_codes: parseList(document.getElementById('fm-status').value),
+    word_counts: parseList(document.getElementById('fm-words').value),
+    lengths: parseList(document.getElementById('fm-lengths').value)
+  };
+
+  closeFilterModal();
+
+  fetch('/api/filter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { alert('Filter error: ' + data.error); return; }
+    // Auto-open the resulting file
+    var label = _filterTargetName.replace('.json', '_custom_filtered.json');
+    var u = '/api/results/file?path=' + encodeURIComponent(data.output_path);
+    viewJson(u, label);
+    // Refresh the file tree
+    loadTree();
+  });
 }
 
 // ── Offer to start scans on nmap results ──────────────────────────────────────

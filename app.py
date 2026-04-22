@@ -1,9 +1,11 @@
 from flask import Flask, jsonify, request, Response, stream_with_context, render_template
-import subprocess, json, os
+import subprocess, json, os, sys
 from pathlib import Path
 from urllib.parse import urlparse
 import xml.etree.ElementTree as ET
 import shutil
+sys.path.insert(0, str(Path(__file__).parent / 'scans'))
+from custom_filter import run_custom_filter
 
 processes = {}
 working_path = Path.cwd() # ./
@@ -100,6 +102,22 @@ def file_results():
         return jsonify([])
 
     return jsonify(json.load(open(target)))
+
+@app.route('/api/filter', methods=['POST'])
+def custom_filter():
+    body = request.get_json()
+    try:
+        output_path = run_custom_filter(
+            input_path   = base_path / body['path'],
+            smart_enabled= body.get('smart_enabled', True),
+            smart_limit  = body.get('smart_limit', 1000),
+            status_codes = body.get('status_codes', []),
+            word_counts  = body.get('word_counts', []),
+            lengths      = body.get('lengths', [])
+        )
+        return jsonify({'output_path': output_path})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # scans are started by posting to a single endpoint with the necessary values
 # app.py
