@@ -18,8 +18,8 @@ git clone https://github.com/TheLastOfEugenes/puf.git
 
 For exegol users: here is a quick 2-liner to install puf and include it to your image.
 ```
-echo "wget -qO- https://github.com/TheLastOfEugenes/puf/archive/refs/tags/v1.0.tar.gz | tar -xz -C /opt/ && mv /opt/puf-1.0 /opt/puf" > $HOME/.exegol/my-resources/setup/load_user_setup.sh
-echo "alias puf='python3 /opt/puf/app.py'" > $HOME/.exegol/my-resources/setup/zsh/aliases
+echo "wget -qO- https://github.com/TheLastOfEugenes/puf/archive/refs/tags/v1.0.tar.gz | tar -xz -C /opt/ && mv /opt/puf-1.0 /opt/puf" >> $HOME/.exegol/my-resources/setup/load_user_setup.sh
+echo "alias puf='python3 /opt/puf/app.py'" >> $HOME/.exegol/my-resources/setup/zsh/aliases
 ```
 
 # Use guide
