@@ -28,7 +28,7 @@ def smart_filter(results):
     # Find ALL dominant fingerprints exceeding both thresholds
     dominant_fps = set(
         fp for fp, count in fingerprints.items()
-        if count > SMART_FILTER_MIN_COUNT and count > len(results) * SMART_FILTER_MIN_RATIO
+        if count > SMART_FILTER_MIN_COUNT # and count > len(results) * SMART_FILTER_MIN_RATIO
     )
 
     if not dominant_fps:

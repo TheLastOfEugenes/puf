@@ -21,7 +21,7 @@ def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
         )
         dominant_fps = set(
             fp for fp, count in fingerprints.items()
-            if count > smart_limit and count > len(results) * 0.5
+            if count > smart_limit
         )
         if dominant_fps:
             outliers = [r for r in results if
