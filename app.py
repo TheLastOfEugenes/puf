@@ -48,6 +48,9 @@ app = Flask(__name__)
 conf = configparser.ConfigParser()
 conf.read(Path(__file__).parent / 'puf.conf')
 
+def get_auto_filter():
+    return conf.getboolean('ffuf', 'auto_filter', fallback=True)
+
 def get_wordlist(type):
     return conf.get('wordlists', type, fallback={
         'files': '/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-files-lowercase.txt',
@@ -203,7 +206,6 @@ def stream_ffuf():
 
     port = parsed.port or (80 if parsed.scheme == 'http' else 443)
     wordlist = get_wordlist(type)
-    custom_cmd = get_command('ffuf')
 
     if type in ('files', 'dirs'):
         outpath = base_path / root / parsed.hostname / f"{parsed.scheme}_{port}"
@@ -218,17 +220,29 @@ def stream_ffuf():
         return jsonify({'error': 'invalid type'}), 400
 
     def generate():
-        if custom_cmd:
-            cmd = custom_cmd.format(
-                target=target,
-                hostname=parsed.hostname,
-                wordlist=wordlist,
-                outfile=str(outfile),
-                type=type
-            ).split()
+        if type == 'subs':
+            custom_cmd = get_command('fuzz_subs')
+            if custom_cmd:
+                cmd = custom_cmd.format(
+                    target=target,
+                    hostname=parsed.hostname,
+                    wordlist=wordlist,
+                    outfile=str(outfile)
+                ).split()
+            else:
+                cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
+                       target, parsed.hostname, wordlist, str(outfile), 'True']
         else:
-            cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
-                   target, parsed.hostname, wordlist, str(outfile), str(type == 'subs')]
+            custom_cmd = get_command('fuzz')
+            if custom_cmd:
+                cmd = custom_cmd.format(
+                    target=target,
+                    wordlist=wordlist,
+                    outfile=str(outfile)
+                ).split()
+            else:
+                cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
+                       target, parsed.hostname, wordlist, str(outfile), 'False']
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
@@ -239,6 +253,7 @@ def stream_ffuf():
         process.stdout.close()
         process.wait()
         processes.pop(tab_id, None)
+        yield f"data: AUTO_FILTER:{'true' if get_auto_filter() else 'false'}\n\n"
         yield "data: [DONE]\n\n"
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
