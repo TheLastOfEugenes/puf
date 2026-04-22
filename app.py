@@ -58,9 +58,11 @@ def nmap_results(target):
     parsed = urlparse(url)
 
     target_path = base_path / parsed.hostname
+    print(target_path)
     if not target_path.exists():
         return jsonify([])
     nmap_path = target_path / 'nmap.xml'
+    print(nmap_path)
     if not nmap_path.exists() or not nmap_path.read_text().strip():
         return jsonify([])
 

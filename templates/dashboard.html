@@ -430,7 +430,7 @@ function filePopover(x, y, name, parts) {
   var actions = [];
 
   if (name === 'nmap.xml') {
-    actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[0]); } });
+    actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[1]); } });
   } else if (name.endsWith('.json')) {
     var filePath = parts.join('/') + '/' + name;
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
