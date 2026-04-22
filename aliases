@@ -1,0 +1,124 @@
+fnmap() {
+    nmap -sCV -T4 "" -p- -v -oN nmap.out
+}
+
+
+# fast scan functions
+ffuf_scan() {
+  # reading args
+  local TARGET=""
+  local SEARCHTYPE=""
+  local POSITIONAL_ARGS=()
+
+  while [[ 0 -gt 0 ]]; do
+    case  in
+      -t|--target)
+        TARGET=""
+        shift
+        shift
+        ;;
+      -s|--search)
+        SEARCHTYPE=""
+        shift
+        shift
+        ;;
+      #-*|--*)
+      #  echo "Unknown option "
+      #  return 1
+      #  ;;
+      *)
+        POSITIONAL_ARGS+=("")
+        shift
+        ;;
+    esac
+  done
+
+  set -- ""
+
+  echo "TARGET  = "
+  echo "SEARCH TYPE     = "
+
+  # getting the values of scheme, file, port and host.
+  local target=""
+  [[ "" != http://* && "" != https://* ]] && target="http://"
+  target=""
+  local scheme=""
+  local rest=""
+  local url_path=""
+  local port_host=""
+  local host=""
+  local port=""
+
+  # setting port for cases of http or https
+  if [[ "" == "" ]]; then
+    [[ "" == "http" ]] && port="80" || port="443"
+  fi
+
+  mkdir -p ""
+  mkdir -p "/_"
+
+  # creating local variables for wordlist
+  local wordlist=""
+  local files_wordlist="/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-files-lowercase.txt"
+  local dirs_wordlist="/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-directories-lowercase.txt"
+  local subs_wordlist="/usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-110000.txt"
+
+  # creating local variables for outfile
+  local outfile=""
+  local files_outfile="files.json"
+  local dirs_outfile="dirs.json"
+  local subs_outfile="subs.json"
+
+  local subs="false"
+
+  # creating prefix for outfile name
+  local prefix=""
+  [[ "" == "" ]] && prefix="" || prefix="_"
+
+  # setting wordlist and outfile depending on the type of scan performed
+  if [[ "" == "files" ]]; then
+    wordlist=""
+    outfile="/_/"
+  elif [[ "" == "dirs" ]]; then
+    wordlist=""
+    outfile="/_/"
+  elif [[ "" == "subs" ]]; then
+    subs="true"
+    wordlist=""
+    outfile="/_0"
+  else
+    echo "search type unkown"
+    return 1
+  fi
+
+  # checking if wordlist exists
+  if [[ -z "" || ! -f "" ]]; then
+    echo "Check the wordlist file, it seems there is a problem..."
+    return 1
+  fi
+
+  # checking if outfile exists
+  if [[ -z "" ]]; then
+    echo "The output file has not been set, check if there was any problem with permissions."
+    return 1
+  fi
+
+  # starting command, finally
+  if [[ "" == "true" ]]; then
+    ffuf -k -c -ac -u "" -H "Host: FUZZ." -w "" -o "" ""
+  else
+    ffuf -k -c -u "/FUZZ" -w "" -o "" ""
+  fi
+}
+
+fdirs() {
+    ffuf_scan -t "" -s "dirs" ""
+}
+
+ffiles() {
+    ffuf_scan -t "" -s "files" ""
+}
+
+fsubs() {
+    ffuf_scan -t "" -s "subs" ""
+}
