@@ -114,7 +114,7 @@ function setPaneContent(id, html) {
 }
 
 // ── SSE ───────────────────────────────────────
-function stream(url, tabId) {
+function stream(url, tabId, cmd) {
   logCommand(tabId, '', cmd || url);
   const src = new EventSource(url);
   src.onmessage = function(e) {
@@ -191,18 +191,13 @@ function stream(url, tabId) {
       return;
     }
 
-    src.onerror = function() {
-      src.close();
-      setDot(tabId, 'error');
-      updateLogDot(tabId, 'error');
-    };
-
     appendLine(tabId, e.data);
   };
 
   src.onerror = function() {
     src.close();
     setDot(tabId, 'error');
+    updateLogDot(tabId, 'error');
   };
 }
 
@@ -232,13 +227,13 @@ function launchNmapForm(e) {
 function launchNmap(target) {
   var clean = rootDomain(target);
   var id = createTab(clean, 'nmap');
-  stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id);
+  stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id, 'nmap → ' + clean);
   closePopover();
 }
 
 function launchFfuf(target, type) {
   var id = createTab(target, type);
-  stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id);
+  stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id, type + ' → ' + target);
   closePopover();
 }
 
@@ -776,4 +771,5 @@ fetch('/api/config/icons')
     ICONS = data;
     refreshTree();
     setInterval(refreshTree, 5000);
+    initCmdPanel();
   });
