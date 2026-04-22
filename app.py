@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'scans'))
 from custom_filter import run_custom_filter
 import configparser
 import shlex
+import re
 
 conf = configparser.ConfigParser()
 conf.read(Path(__file__).parent / 'puf.conf')
@@ -245,13 +246,18 @@ def stream_ffuf():
                 cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
                     target, parsed.hostname, wordlist, str(outfile), 'False']
 
-        print("CMD:", cmd, flush=True)
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process
         yield f"data: OUTFILE:{str(outfile.relative_to(base_path))}\n\n"
         for line in iter(process.stdout.readline, ''):
-            yield f"data: {line.rstrip()}\n\n"
+            m = re.search(r'\[(\d+)/(\d+)\]', line)
+            if m:
+                done, total = int(m.group(1)), int(m.group(2))
+                pct = int((done / total) * 100) if total else 0
+                yield f"data: PROGRESS:{pct}\n\n"
+            else:
+                yield f"data: {line.rstrip()}\n\n"
         process.stdout.close()
         process.wait()
         processes.pop(tab_id, None)
