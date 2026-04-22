@@ -200,6 +200,7 @@ function killTab(e, id) {
   e.stopPropagation();
   fetch('/api/scan/kill/' + id, { method: 'POST' })
     .then(function() {
+      if (tabs[id]) tabs[id].killed = true;  // mark as killed
       setDot(id, 'error');
       var kill = document.getElementById('kill_' + id);
       if (kill) kill.style.display = 'none';
@@ -236,9 +237,10 @@ function stream(url, tabId) {
       if (kill) kill.style.display = 'none';
       refreshTree();
 
-      // auto-open the result file in a new tab
       var outfile = tabs[tabId] && tabs[tabId].outfile;
-      if (outfile) {
+      var killed = tabs[tabId] && tabs[tabId].killed;  // check flag
+
+      if (outfile && !killed) {
         var u = '/api/results/file?path=' + encodeURIComponent(outfile);
         var label = tabs[tabId].label + ' (' + tabs[tabId].kind + ')';
         viewJson(u, label);
@@ -259,10 +261,9 @@ function stream(url, tabId) {
 
 // ── Launchers ─────────────────────────────────
 function rootDomain(input) {
-  // strip scheme if present
   var host = input.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
-  // strip subdomains — keep only last two parts (domain.tld)
   var parts = host.split('.');
+  // keep only last two segments: domain.tld
   return parts.length > 2 ? parts.slice(-2).join('.') : host;
 }
 
