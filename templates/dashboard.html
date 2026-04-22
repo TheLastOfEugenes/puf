@@ -711,6 +711,7 @@ fetch('/api/config/icons')
   .then(function(r) { return r.json(); })
   .then(function(data) {
     ICONS = data;
+    console.log('ICONS loaded:', ICONS);  // add this
     refreshTree();                  // only runs after ICONS is ready
     setInterval(refreshTree, 5000);
   });
