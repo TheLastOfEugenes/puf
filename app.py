@@ -183,6 +183,25 @@ def custom_filter():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/commands/get')
+def get_commands():
+    return jsonify(commands)
+
+@app.route('/api/commands/set', methods=['POST'])
+def set_command():
+    body = request.get_json()
+    key  = body.get('key')
+    cmd  = body.get('cmd')
+    if key not in commands:
+        return jsonify({'error': 'unknown key'}), 400
+    commands[key] = cmd
+    return jsonify({'ok': True})
+
+@app.route('/api/commands/reset', methods=['POST'])
+def reset_commands():
+    reload_commands()
+    return jsonify({'ok': True})
+
 @app.route('/api/scan/nmap')
 def stream_nmap():
     target = request.args.get('target')

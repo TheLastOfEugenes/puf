@@ -227,13 +227,24 @@ function launchNmapForm(e) {
 function launchNmap(target) {
   var clean = rootDomain(target);
   var id = createTab(clean, 'nmap');
-  stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id, 'nmap → ' + clean);
+  fetch('/api/commands/get').then(function(r) { return r.json(); }).then(function(cmds) {
+    var cmd = cmds['nmap'].replace('{target}', clean).replace('{outfile}', '...');
+    stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id, cmd);
+  });
   closePopover();
 }
 
 function launchFfuf(target, type) {
   var id = createTab(target, type);
-  stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id, type + ' → ' + target);
+  fetch('/api/commands/get').then(function(r) { return r.json(); }).then(function(cmds) {
+    var key = type === 'subs' ? 'fuzz_subs' : 'fuzz';
+    var cmd = cmds[key]
+      .replace('{target}', target)
+      .replace('{hostname}', new URL(target.startsWith('http') ? target : 'http://' + target).hostname)
+      .replace(/-w\s+\S+/g, '-w {wordlist}')
+      .replace(/-o\s+\S+/g, '-o {outfile}');
+    stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id, cmd);
+  });
   closePopover();
 }
 
