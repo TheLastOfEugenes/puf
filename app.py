@@ -45,6 +45,19 @@ server_base_path = Path(__file__).parent
 
 app = Flask(__name__)
 
+conf = configparser.ConfigParser()
+conf.read(Path(__file__).parent / 'puf.conf')
+
+def get_wordlist(type):
+    return conf.get('wordlists', type, fallback={
+        'files': '/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-files-lowercase.txt',
+        'dirs':  '/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-directories-lowercase.txt',
+        'subs':  '/usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-110000.txt',
+    }[type])
+
+def get_command(tool):
+    return conf.get('commands', tool, fallback='').strip() or None
+
 # tree walk, allows to show updated path 
 # files are obtained by querying /path/to/target as it corresponds to the tree structure
 def get_root_domain(hostname):
@@ -150,107 +163,84 @@ def custom_filter():
 def stream_nmap():
     target = request.args.get('target')
     tab_id = request.args.get('tabId')
-    url = target
-    if not (url.startswith("http://") or url.startswith("https://")):
-        url = '%s%s' % ("http://", url)
+    url = target if target.startswith('http') else 'http://' + target
     parsed = urlparse(url)
-
     root = get_root_domain(parsed.hostname)
 
-    outpath = base_path/f"{root}"
+    outpath = base_path / root
     outpath.mkdir(parents=True, exist_ok=True)
-    outfile = outpath/'nmap.xml'
+    outfile = outpath / 'nmap.xml'
+
+    custom_cmd = get_command('nmap')
 
     def generate():
-        nmap_script_path = server_base_path/'scans/nmap.py'
-        process = subprocess.Popen(
-            ['python3', str(nmap_script_path), target, str(outfile)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            bufsize=1,
-            text=True
-        )
+        if custom_cmd:
+            cmd = custom_cmd.format(target=target, outfile=str(outfile)).split()
+        else:
+            cmd = ['python3', str(server_base_path / 'scans/nmap.py'), target, str(outfile)]
+
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process
         yield f"data: OUTFILE:{str(outfile.relative_to(base_path))}\n\n"
         for line in iter(process.stdout.readline, ''):
-            yield f"data: {line.rstrip(chr(10))}\n\n"
+            yield f"data: {line.rstrip()}\n\n"
         process.stdout.close()
         process.wait()
-        if tab_id:
-            processes.pop(tab_id, None)
+        processes.pop(tab_id, None)
         yield "data: [DONE]\n\n"
+
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/api/scan/ffuf')
 def stream_ffuf():
     target = request.args.get('target')
-    type = request.args.get('type')
+    type   = request.args.get('type')
     tab_id = request.args.get('tabId')
-    url = target
-    if not (url.startswith("http://") or url.startswith("https://")):
-        url = '%s%s' % ("http://", url)
+    url = target if target.startswith('http') else 'http://' + target
     parsed = urlparse(url)
+    root = get_root_domain(parsed.hostname)
 
-    print(parsed)
+    port = parsed.port or (80 if parsed.scheme == 'http' else 443)
+    wordlist = get_wordlist(type)
+    custom_cmd = get_command('ffuf')
 
-    scheme = parsed.scheme
-
-    if not parsed.port:
-        if parsed.scheme == "http":
-            port = 80
-        elif parsed.scheme == "https":
-            port = 443
-        else:
-            port = -1
-    else:
-        port = parsed.port
-
-    root = get_root_domain(parsed.hostname)  # strip subdomain for folder
-
-    if type == "files" or type == "dirs":
-        outpath = base_path/f"{root}"/f"{parsed.hostname}"/f"{parsed.scheme}_{port}"
+    if type in ('files', 'dirs'):
+        outpath = base_path / root / parsed.hostname / f"{parsed.scheme}_{port}"
         outpath.mkdir(parents=True, exist_ok=True)
-        path = parsed.path
-        if path != "":
-            if path[0] == '/':
-                path = path[1:]
-            if path[-1] != '/':
-                path = path+'/'
-            path = path.replace('/', '_')
-        if type == "files":
-            outfile = outpath/f"{path}files.json"
-            wordlist = "/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-files-lowercase.txt"
-        else:
-            outfile = outpath/f"{path}dirs.json"
-            wordlist = "/usr/share/wordlists/seclists/Discovery/Web-Content/raft-large-directories-lowercase.txt"
-    elif type == "subs":
-        outpath = base_path/f"{root}"/f"{parsed.hostname}"
+        path = (parsed.path or '').lstrip('/').rstrip('/').replace('/', '_')
+        outfile = outpath / f"{path}{'files' if type == 'files' else 'dirs'}.json"
+    elif type == 'subs':
+        outpath = base_path / root / parsed.hostname
         outpath.mkdir(parents=True, exist_ok=True)
-        outfile = outpath/f"{scheme}_subs.json"
-        wordlist = "/usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-110000.txt"
+        outfile = outpath / f"{parsed.scheme}_subs.json"
     else:
-        return jsonify({'error': 'invalid type, must be files, dirs or subs'}), 400
-    
+        return jsonify({'error': 'invalid type'}), 400
+
     def generate():
-        ffuf_script_path = server_base_path/'scans/ffuf.py'
-        process = subprocess.Popen(
-            ['python3', str(ffuf_script_path), target, parsed.hostname, wordlist, str(outfile), str(type=="subs")],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            bufsize=1,
-            text=True
-        )
+        if custom_cmd:
+            cmd = custom_cmd.format(
+                target=target,
+                hostname=parsed.hostname,
+                wordlist=wordlist,
+                outfile=str(outfile),
+                type=type
+            ).split()
+        else:
+            cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
+                   target, parsed.hostname, wordlist, str(outfile), str(type == 'subs')]
+
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process
         yield f"data: OUTFILE:{str(outfile.relative_to(base_path))}\n\n"
         for line in iter(process.stdout.readline, ''):
-            yield f"data: {line.rstrip(chr(10))}\n\n"
+            yield f"data: {line.rstrip()}\n\n"
         process.stdout.close()
         process.wait()
-        if tab_id:
-            processes.pop(tab_id, None)
+        processes.pop(tab_id, None)
         yield "data: [DONE]\n\n"
+
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/api/scan/kill/<tab_id>', methods=['POST'])
