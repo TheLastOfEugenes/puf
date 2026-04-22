@@ -50,6 +50,12 @@ app = Flask(__name__)
 conf = configparser.ConfigParser()
 conf.read(Path(__file__).parent / 'puf.conf')
 
+commands = {
+    'nmap':      conf.get('commands', 'nmap',      fallback=''),
+    'fuzz':      conf.get('commands', 'fuzz',      fallback=''),
+    'fuzz_subs': conf.get('commands', 'fuzz_subs', fallback=''),
+}
+
 def get_auto_filter():
     return conf.getboolean('ffuf', 'auto_filter', fallback=True)
 
@@ -60,8 +66,11 @@ def get_wordlist(type):
         'subs':  '/usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-110000.txt',
     }[type])
 
-def get_command(tool):
-    return conf.get('commands', tool, fallback='').strip() or None
+def reload_commands():
+    conf.read(Path(__file__).parent / 'puf.conf')
+    commands['nmap']      = conf.get('commands', 'nmap',      fallback='')
+    commands['fuzz']      = conf.get('commands', 'fuzz',      fallback='')
+    commands['fuzz_subs'] = conf.get('commands', 'fuzz_subs', fallback='')
 
 # tree walk, allows to show updated path 
 # files are obtained by querying /path/to/target as it corresponds to the tree structure
@@ -176,16 +185,9 @@ def stream_nmap():
     outpath.mkdir(parents=True, exist_ok=True)
     outfile = outpath / 'nmap.xml'
 
-    custom_cmd = get_command('nmap')
-
-    custom_cmd = get_command('nmap')
-
     def generate():
-        if custom_cmd:
-            cmd = shlex.split(custom_cmd.format(target=target, outfile=str(outfile)))
-        else:
-            cmd = ['python3', str(server_base_path / 'scans/nmap.py'), target, str(outfile)]
-        
+        cmd = shlex.split(commands['nmap'].format(target=target, outfile=str(outfile)))
+
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process
@@ -225,28 +227,18 @@ def stream_ffuf():
 
     def generate():
         if type == 'subs':
-            custom_cmd = get_command('fuzz_subs')
-            if custom_cmd:
-                cmd = shlex.split(custom_cmd.format(
-                    target=target,
-                    hostname=parsed.hostname,
-                    wordlist=wordlist,
-                    outfile=str(outfile)
-                ))
-            else:
-                cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
-                    target, parsed.hostname, wordlist, str(outfile), 'True']
+            cmd = shlex.split(commands['fuzz_subs'].format(
+                target=target,
+                hostname=parsed.hostname,
+                wordlist=wordlist,
+                outfile=str(outfile)
+            ))
         else:
-            custom_cmd = get_command('fuzz')
-            if custom_cmd:
-                cmd = shlex.split(custom_cmd.format(
-                    target=target,
-                    wordlist=wordlist,
-                    outfile=str(outfile)
-                ))
-            else:
-                cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
-                    target, parsed.hostname, wordlist, str(outfile), 'False']
+            cmd = shlex.split(commands['fuzz'].format(
+                target=target,
+                wordlist=wordlist,
+                outfile=str(outfile)
+            ))
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
