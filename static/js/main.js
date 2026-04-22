@@ -280,38 +280,100 @@ function viewNmap(target) {
 }
 
 function viewJson(apiUrl, label) {
-  fetch(apiUrl)
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var id = createTab(label, 'results');
-      setDot(id, 'done');
-      var results = data.results || data;
-      if (!Array.isArray(results) || !results.length) {
-        setPaneContent(id, '<div class="empty-hint"><p>No results</p></div>');
-        return;
-      }
-      var isSubs = results.length > 0 && results[0].input && results[0].input.FUZZ && !results[0].url.includes(results[0].input.FUZZ);
-      var rows = '';
-      results.forEach(function(r, i) {
-        var display = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
-        var host = isSubs ? new URL(r.url).hostname : null;
-        var clickTarget = isSubs ? 'http://' + display : r.url;
-        rows += '<tr class="result-row" id="rrow_' + id + '_' + i + '" onclick="resultRowClick(event, \'' + clickTarget + '\')">' +
-          '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
-          (isSubs ? '<td class="muted">' + host + '</td>' : '') +
-          '<td class="status-' + Math.floor(r.status/100) + 'xx">' + r.status + '</td>' +
-          '<td class="muted">' + r.length + '</td>' +
-          '<td class="muted">' + r.words + '</td>' +
-          '<td class="muted">' + r.lines + '</td>' +
-          '<td><button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + i + '\')" title="Flag as target">⚑</button></td>' +
-          '</tr>';
+  var baseUrl = apiUrl.split('&offset=')[0].split('?offset=')[0];
+  // strip any existing offset/limit params
+  baseUrl = baseUrl.replace(/[&?]offset=\d+/, '').replace(/[&?]limit=\d+/, '');
+  var separator = baseUrl.includes('?') ? '&' : '?';
+
+  var offset = 0;
+  var limit  = 500;
+  var total  = null;
+  var loading = false;
+  var isSubs = false;
+  var tabId  = null;
+
+  function fetchPage(id) {
+    if (loading) return;
+    if (total !== null && offset >= total) return;
+    loading = true;
+
+    fetch(baseUrl + separator + 'offset=' + offset + '&limit=' + limit)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var results = data.results || data;
+        total = data.total !== undefined ? data.total : results.length;
+
+        if (offset === 0) {
+          // first page — build the tab and table
+          tabId = createTab(label, 'results');
+          setDot(tabId, 'done');
+
+          if (!Array.isArray(results) || !results.length) {
+            setPaneContent(tabId, '<div class="empty-hint"><p>No results</p></div>');
+            loading = false;
+            return;
+          }
+
+          isSubs = results[0].input && results[0].input.FUZZ && !results[0].url.includes(results[0].input.FUZZ);
+
+          var html =
+            '<div class="pane-table" id="jtable_' + tabId + '">' +
+            '<table class="rtable"><thead><tr>' +
+            '<th>URL</th>' + (isSubs ? '<th>Host</th>' : '') +
+            '<th>Status</th><th>Length</th><th>Words</th><th>Lines</th><th></th>' +
+            '</tr></thead>' +
+            '<tbody id="jtbody_' + tabId + '">' +
+            buildRows(results, tabId, 0, isSubs) +
+            '</tbody></table>' +
+            '<div id="jloader_' + tabId + '" style="padding:12px;text-align:center;color:var(--muted);font-size:var(--xs);">' +
+              (offset + results.length < total ? 'Loading more…' : '') +
+            '</div>' +
+            '</div>';
+
+          setPaneContent(tabId, html);
+
+          // attach scroll listener
+          var pane = document.getElementById('jtable_' + tabId);
+          pane.addEventListener('scroll', function() {
+            if (pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 100) {
+              fetchPage(tabId);
+            }
+          });
+
+        } else {
+          // subsequent pages — append rows
+          var tbody = document.getElementById('jtbody_' + tabId);
+          if (tbody) tbody.innerHTML += buildRows(results, tabId, offset, isSubs);
+          var loader = document.getElementById('jloader_' + tabId);
+          if (loader) loader.textContent = (offset + results.length < total ? '' : 'All ' + total + ' results loaded');
+        }
+
+        offset += results.length;
+        loading = false;
       });
-      setPaneContent(id,
-        '<div class="pane-table"><table class="rtable"><thead><tr>' +
-        '<th>URL</th>' + (isSubs ? '<th>Host</th>' : '') +
-        '<th>Status</th><th>Length</th><th>Words</th><th>Lines</th><th></th>' +
-        '</tr></thead><tbody>' + rows + '</tbody></table></div>');
+  }
+
+  function buildRows(results, id, startIdx, isSubs) {
+    var rows = '';
+    results.forEach(function(r, i) {
+      var idx = startIdx + i;
+      var display    = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
+      var host       = isSubs ? new URL(r.url).hostname : null;
+      var clickTarget = isSubs ? 'http://' + display : r.url;
+      rows += '<tr class="result-row" id="rrow_' + id + '_' + idx + '" onclick="resultRowClick(event, \'' + clickTarget + '\')">' +
+        '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
+        (isSubs ? '<td class="muted">' + host + '</td>' : '') +
+        '<td class="status-' + Math.floor(r.status/100) + 'xx">' + r.status + '</td>' +
+        '<td class="muted">' + r.length + '</td>' +
+        '<td class="muted">' + r.words + '</td>' +
+        '<td class="muted">' + r.lines + '</td>' +
+        '<td><button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button></td>' +
+        '</tr>';
     });
+    return rows;
+  }
+
+  fetchPage(null);
   closePopover();
 }
 

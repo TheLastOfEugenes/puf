@@ -138,14 +138,21 @@ def nmap_results(target):
 @app.route('/api/results/file')
 def file_results():
     rel_path = request.args.get('path', '')
-    target = (working_path / rel_path).resolve()
+    offset   = int(request.args.get('offset', 0))
+    limit    = int(request.args.get('limit', 500))
+    target   = (working_path / rel_path).resolve()
 
     if not str(target).startswith(str(base_path.resolve())):
         return jsonify({'error': 'forbidden'}), 403
     if not target.exists():
         return jsonify([])
 
-    return jsonify(json.load(open(target)))
+    data    = json.load(open(target))
+    results = data.get('results', data) if isinstance(data, dict) else data
+    total   = len(results)
+    page    = results[offset:offset + limit]
+
+    return jsonify({'results': page, 'total': total, 'offset': offset, 'limit': limit})
 
 @app.route('/api/results/raw')
 def raw_file():
