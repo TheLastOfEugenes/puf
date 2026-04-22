@@ -181,7 +181,7 @@ def stream_nmap():
         if custom_cmd:
             cmd = custom_cmd.format(target=target, outfile=str(outfile)).split()
         else:
-            cmd = ['python3', str(server_base_path / 'scans/nmap.py'), target, str(outfile)]
+            cmd = shlex.split(custom_cmd.format(target=target, outfile=str(outfile)))
         
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
