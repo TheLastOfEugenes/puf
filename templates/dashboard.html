@@ -198,9 +198,9 @@ function closeTab(e, id) {
 
 function killTab(e, id) {
   e.stopPropagation();
+  if (tabs[id]) tabs[id].killed = true;  // set BEFORE fetch, avoids race
   fetch('/api/scan/kill/' + id, { method: 'POST' })
     .then(function() {
-      if (tabs[id]) tabs[id].killed = true;  // mark as killed
       setDot(id, 'error');
       var kill = document.getElementById('kill_' + id);
       if (kill) kill.style.display = 'none';
@@ -262,8 +262,8 @@ function stream(url, tabId) {
 // ── Launchers ─────────────────────────────────
 function rootDomain(input) {
   var host = input.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+  if (isIp(host)) return host;  // don't strip IPs
   var parts = host.split('.');
-  // keep only last two segments: domain.tld
   return parts.length > 2 ? parts.slice(-2).join('.') : host;
 }
 

@@ -138,7 +138,13 @@ def custom_filter():
         return jsonify({'error': str(e)}), 500
 
 # scans are started by posting to a single endpoint with the necessary values
-# app.py
+def get_root_domain(hostname):
+    import re
+    if re.match(r'^\d+\.\d+\.\d+\.\d+$', hostname):
+        return hostname  # IP, don't strip
+    parts = hostname.split('.')
+    return '.'.join(parts[-2:]) if len(parts) > 2 else hostname
+
 @app.route('/api/scan/nmap')
 def stream_nmap():
     target = request.args.get('target')
@@ -148,7 +154,9 @@ def stream_nmap():
         url = '%s%s' % ("http://", url)
     parsed = urlparse(url)
 
-    outpath = base_path/f"{parsed.hostname}"
+    root = get_root_domain(parsed.hostname)
+
+    outpath = base_path/f"{root}"
     outpath.mkdir(parents=True, exist_ok=True)
     outfile = outpath/'nmap.xml'
 
@@ -197,8 +205,10 @@ def stream_ffuf():
     else:
         port = parsed.port
 
+    root = get_root_domain(parsed.hostname)  # strip subdomain for folder
+
     if type == "files" or type == "dirs":
-        outpath = base_path/f"{parsed.hostname}"/f"{parsed.hostname}"/f"{parsed.scheme}_{port}"
+        outpath = base_path/f"{root}"/f"{parsed.hostname}"/f"{parsed.scheme}_{port}"
         outpath.mkdir(parents=True, exist_ok=True)
         path = parsed.path
         if path != "":
