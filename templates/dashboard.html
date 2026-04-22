@@ -502,7 +502,7 @@ function filePopover(x, y, name, parts) {
   } else if (name.endsWith('.json') && !name.endsWith('_filtered.json')) {
     var filterPath = parts.join('/') + '/' + name;
     actions.push({
-      label: '⧩ Custom filter',
+      label: '⚙ Custom filter',
       fn: function() { openFilterModal(filterPath, name); },
       style: 'color: orange'
     });
