@@ -22,6 +22,8 @@ echo "wget -qO- https://github.com/TheLastOfEugenes/puf/archive/refs/tags/v1.0.t
 echo "alias puf='python3 /opt/puf/app.py'" >> $HOME/.exegol/my-resources/setup/zsh/aliases
 ```
 
+It is worth noting that for anyone wishing to use this app, nmap and ffuf are both required to be installed on the machine as well as python's flask.
+
 # Use guide
 
 Once started, the website is accessible at http://localhost:5454 . Everything worth seeing is on the main page. Then, connection is made to the api to localhost:5454/api . The port can be changed through app.py file.
