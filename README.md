@@ -24,6 +24,8 @@ echo "alias puf='python3 /opt/puf/app.py'" >> $HOME/.exegol/my-resources/setup/z
 
 # Use guide
 
+Once started, the website is accessible at http://localhost:5454 . Everything worth seeing is on the main page. Then, connection is made to the api to localhost:5454/api . The port can be changed through app.py file.
+
 ## Presentation of the results
 
 Instead of having multiple shells open and having to cat/jq every result as soon as you wonder what interesting port was exposed you can simply keep this server open in your web browser while you go about your tests and focus on something else and get it back whenever you want, really fast.
