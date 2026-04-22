@@ -221,7 +221,7 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 #cmd-panel {
-  width: 320px;
+  width: 420px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -289,4 +289,11 @@ input[type=number] { -moz-appearance: textfield; }
   white-space: nowrap;
   color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
+}
+
+.cmd-kind {
+  color: var(--blue);
+  font-size: var(--xs);
+  flex-shrink: 0;
+  padding: 0 4px;
 }

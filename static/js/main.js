@@ -114,9 +114,11 @@ function setPaneContent(id, html) {
 }
 
 // ── SSE ───────────────────────────────────────
-function stream(url, tabId, cmd) {
-  logCommand(tabId, '', cmd || url);
+function stream(url, tabId, cmd, key) {
+  logCommand(tabId, key || '', cmd || url);
   const src = new EventSource(url);
+  let autoFilter = true;
+  
   src.onmessage = function(e) {
 
     if (e.data.startsWith('OUTFILE:')) {
@@ -621,6 +623,8 @@ function runCustomFilter() {
     lengths:      parseList(document.getElementById('fm-lengths').value)
   };
   closeFilterModal();
+  var filterId = 'filter_' + Date.now();
+  logCommand(filterId, 'filter', 'filter → ' + _filterTargetName);
   fetch('/api/filter', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -628,6 +632,7 @@ function runCustomFilter() {
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
+    updateLogDot(filterId, data.error ? 'error' : 'done');
     if (data.error) { alert('Filter error: ' + data.error); return; }
     var label = _filterTargetName.replace('.json', '_custom_filtered.json');
     var u = '/api/results/file?path=' + encodeURIComponent(data.output_path);
@@ -672,9 +677,10 @@ function logCommand(tabId, key, cmd) {
   entry.innerHTML =
     '<span class="tab-dot running" id="cmdlog_dot_' + tabId + '"></span>' +
     '<span class="cmd-time">' + time + '</span>' +
-    '<span class="cmd-text" title="' + cmd.replace(/"/g,'&quot;') + '" onclick="showCmdPopover(event,\'' + tabId + '\')">' + cmd + '</span>';
+    (key ? '<span class="cmd-kind">' + key + '</span>' : '') +
+    '<span class="cmd-text" title="' + cmd.replace(/"/g,'&quot;') + '" ' +
+    'onclick="navigator.clipboard.writeText(this.getAttribute(\'title\'));this.style.color=\'var(--blue)\';setTimeout(()=>this.style.color=\'\',800)">' + cmd + '</span>';
 
-  // insert above other running entries, below done/error entries
   var entries = list.querySelectorAll('.cmd-log-entry');
   var firstRunning = null;
   entries.forEach(function(e) {
@@ -728,7 +734,6 @@ function initCmdPanel() {
       list.innerHTML = '';
       ['nmap','fuzz','fuzz_subs'].forEach(function(key) {
         var raw = data[key] || '';
-        // strip wordlist and outfile for preview
         var preview = raw
           .replace(/-w\s+\S+/g, '-w {wordlist}')
           .replace(/-o\s+\S+/g, '-o {outfile}');
@@ -771,7 +776,6 @@ function closeCmdEditModal() {
 }
 
 function runCmdFromPanel(key) {
-  // TODO: hook to target input or show a target prompt
   alert('Use the tree or form to launch scans — this will be wired up soon.');
 }
 
