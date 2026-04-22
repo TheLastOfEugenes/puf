@@ -187,3 +187,12 @@ input[type=number] { -moz-appearance: textfield; }
   opacity: 0.8;
   filter: invert(var(--icon-invert, 0));  /* flip to white if dark theme */
 }
+
+.tree-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  margin-right: 4px;
+  opacity: 0.5;
+  filter: invert(1) brightness(0.7);
+}
