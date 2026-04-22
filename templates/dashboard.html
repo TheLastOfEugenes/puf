@@ -226,39 +226,6 @@ function setPaneContent(id, html) {
   tabs[id].pane.innerHTML = html;
 }
 
-// ── SSE ───────────────────────────────────────
-function stream(url, tabId) {
-  const src = new EventSource(url);
-  src.onmessage = function(e) {
-    if (e.data === '[DONE]') {
-      src.close();
-      setDot(tabId, 'done');
-      var kill = document.getElementById('kill_' + tabId);
-      if (kill) kill.style.display = 'none';
-      refreshTree();
-
-      var outfile = tabs[tabId] && tabs[tabId].outfile;
-      var killed = tabs[tabId] && tabs[tabId].killed;  // check flag
-
-      if (outfile && !killed) {
-        var u = '/api/results/file?path=' + encodeURIComponent(outfile);
-        var label = tabs[tabId].label + ' (' + tabs[tabId].kind + ')';
-        viewJson(u, label);
-      }
-      return;
-    }
-    if (e.data.startsWith('OUTFILE:')) {
-      if (tabs[tabId]) tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
-      return;
-    }
-    appendLine(tabId, e.data);
-  };
-  src.onerror = function() {
-    src.close();
-    setDot(tabId, 'error');
-  };
-}
-
 // ── Launchers ─────────────────────────────────
 function rootDomain(input) {
   var host = input.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
@@ -632,6 +599,7 @@ function webScan(baseUrl, hostname) {
   closePopover();
 }
 
+// ── SSE ───────────────────────────────────────
 function stream(url, tabId) {
   const src = new EventSource(url);
   src.onmessage = function(e) {
@@ -655,13 +623,15 @@ function stream(url, tabId) {
       refreshTree();
 
       var outfile = tabs[tabId] && tabs[tabId].outfile;
-      var kind = tabs[tabId] && tabs[tabId].kind;
-      if (outfile) {
+      var kind    = tabs[tabId] && tabs[tabId].kind;
+      var killed  = tabs[tabId] && tabs[tabId].killed;
+
+      if (outfile && !killed) {
         if (kind === 'nmap') {
           var target = outfile.split('/')[0];
           viewNmap(target);
         } else {
-          var label = tabs[tabId].label + ' (' + kind + ')'; 
+          var label = tabs[tabId].label + ' (' + kind + ')';
           var filteredOutfile = outfile.replace(/\.json$/, '_f.json');
           fetch('/api/results/file?path=' + encodeURIComponent('puf/' + filteredOutfile))
             .then(function(r) { return r.json(); })
@@ -695,7 +665,6 @@ function stream(url, tabId) {
       return;
     }
 
-    // nmap raw lines
     appendLine(tabId, e.data);
   };
 
@@ -733,8 +702,7 @@ fetch('/api/config/icons')
   .then(function(r) { return r.json(); })
   .then(function(data) {
     ICONS = data;
-    console.log('ICONS loaded:', ICONS);  // add this
-    refreshTree();                  // only runs after ICONS is ready
+    refreshTree();
     setInterval(refreshTree, 5000);
   });
 

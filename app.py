@@ -47,6 +47,13 @@ app = Flask(__name__)
 
 # tree walk, allows to show updated path 
 # files are obtained by querying /path/to/target as it corresponds to the tree structure
+def get_root_domain(hostname):
+    import re
+    if re.match(r'^\d+\.\d+\.\d+\.\d+$', hostname):
+        return hostname  # IP, don't strip
+    parts = hostname.split('.')
+    return '.'.join(parts[-2:]) if len(parts) > 2 else hostname
+
 @app.route('/api/tree')
 def file_tree():
     tree = {}
@@ -67,7 +74,9 @@ def nmap_results(target):
         url = '%s%s' % ("http://", url)
     parsed = urlparse(url)
 
-    target_path = base_path / parsed.hostname
+    root = get_root_domain(parsed.hostname)
+
+    target_path = base_path / root
     if not target_path.exists():
         return jsonify([])
     nmap_path = target_path / 'nmap.xml'
@@ -136,14 +145,6 @@ def custom_filter():
         return jsonify({'output_path': output_path})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# scans are started by posting to a single endpoint with the necessary values
-def get_root_domain(hostname):
-    import re
-    if re.match(r'^\d+\.\d+\.\d+\.\d+$', hostname):
-        return hostname  # IP, don't strip
-    parts = hostname.split('.')
-    return '.'.join(parts[-2:]) if len(parts) > 2 else hostname
 
 @app.route('/api/scan/nmap')
 def stream_nmap():
