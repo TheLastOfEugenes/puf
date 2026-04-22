@@ -174,3 +174,7 @@ html, body { height: 100%; font-family: var(--font); font-size: var(--sm); color
 .modal-title { font-weight: 600; margin-bottom: 8px; }
 .modal-body { color: var(--muted); font-size: var(--xs); margin-bottom: 20px; word-break: break-all; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }

@@ -108,7 +108,7 @@ def custom_filter():
     body = request.get_json()
     try:
         output_path = run_custom_filter(
-            input_path   = base_path / body['path'],
+            input_path   = working_path / body['path'],
             smart_enabled= body.get('smart_enabled', True),
             smart_limit  = body.get('smart_limit', 1000),
             status_codes = body.get('status_codes', []),
