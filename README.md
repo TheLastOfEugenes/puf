@@ -9,7 +9,22 @@ Ports and Urls Filter is a tool supposed to help you fuzz targets. Its main func
 
 The tool itself is started locally using a flask server and is accessible in a web browser, allowing easier handling with less problems.
 
+# Installation
+
+For classic installation, here is the command to clone the repo:
+```
+git clone https://github.com/TheLastOfEugenes/puf.git
+```
+
+For exegol users: here is a quick 2-liner to install puf and include it to your image.
+```
+echo "wget -qO- https://github.com/TheLastOfEugenes/puf/archive/refs/tags/v1.0.tar.gz | tar -xz -C /opt/ && mv /opt/puf-1.0 /opt/puf" >> $HOME/.exegol/my-resources/setup/load_user_setup.sh
+echo "alias puf='python3 /opt/puf/app.py'" >> $HOME/.exegol/my-resources/setup/zsh/aliases
+```
+
 # Use guide
+
+Once started, the website is accessible at http://localhost:5454 . Everything worth seeing is on the main page. Then, connection is made to the api to localhost:5454/api . The port can be changed through app.py file.
 
 ## Presentation of the results
 
