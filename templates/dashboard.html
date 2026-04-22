@@ -299,7 +299,8 @@ function viewJson(apiUrl, label) {
         var display = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
         var host = isSubs ? new URL(r.url).hostname : null;
 
-        rows += '<tr class="result-row" id="rrow_' + id + '_' + i + '" onclick="resultRowClick(event, \'' + r.url + '\')">' +
+        var clickTarget = isSubs ? 'http://' + display : r.url;
+        rows += '<tr class="result-row" id="rrow_' + id + '_' + i + '" onclick="resultRowClick(event, \'' + clickTarget + '\')">' +
           '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
           (isSubs ? '<td class="muted">' + host + '</td>' : '') +
           '<td class="status-' + Math.floor(r.status/100) + 'xx">' + r.status + '</td>' +
