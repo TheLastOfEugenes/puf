@@ -53,8 +53,8 @@ def file_tree():
 def nmap_results(target):
     
     url = target
-    if '://' not in url:
-        url = '%s%s' % ('http://', url)
+    if not (url.startswith("http://") or url.startswith("https://")):
+        url = '%s%s' % ("http://", url)
     parsed = urlparse(url)
 
     target_path = base_path / parsed.hostname
@@ -107,8 +107,8 @@ def stream_nmap():
     target = request.args.get('target')
     tab_id = request.args.get('tabId')
     url = target
-    if '://' not in url:
-        url = '%s%s' % ('http://', url)
+    if not (url.startswith("http://") or url.startswith("https://")):
+        url = '%s%s' % ("http://", url)
     parsed = urlparse(url)
 
     outpath = base_path/f"{parsed.hostname}"
@@ -142,8 +142,8 @@ def stream_ffuf():
     type = request.args.get('type')
     tab_id = request.args.get('tabId')
     url = target
-    if '://' not in url:
-        url = '%s%s' % ('http://', url)
+    if not (url.startswith("http://") or url.startswith("https://")):
+        url = '%s%s' % ("http://", url)
     parsed = urlparse(url)
 
     print(parsed)
