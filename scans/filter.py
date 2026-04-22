@@ -2,19 +2,21 @@ import json, sys
 from pathlib import Path
 from collections import Counter
 
-# ── Filters ────────────────────────────────────────────────
-FILTERED_STATUS_CODES = [
-    404, 301
-]
-
-def apply_filters(result):
-    if result.get('status') in FILTERED_STATUS_CODES:
-        return False
-    return True
+# ── Smart Filtering ─────────────────────────────────────────
+SMART_FILTER_ENABLED = True
+SMART_FILTER_MIN_COUNT = 1000      # minimum occurrences to consider a fingerprint dominant
+SMART_FILTER_MIN_RATIO = 0.5       # minimum ratio of total results to trigger filtering
 # ────────────────────────────────────────────────────────────
 
-def filter_results(results):
-    if not results:
+# ── Post-filters ────────────────────────────────────────────
+FILTERED_STATUS_CODES = [404]
+FILTERED_WORD_COUNTS  = []         # e.g. [12, 15] to drop results with 12 or 15 words
+FILTERED_LENGTHS      = []         # e.g. [142, 500] to drop results of those byte lengths
+# ────────────────────────────────────────────────────────────
+
+
+def smart_filter(results):
+    if not SMART_FILTER_ENABLED or not results:
         return results
 
     fingerprints = Counter(
@@ -22,16 +24,36 @@ def filter_results(results):
         for r in results
     )
 
-    dominant = fingerprints.most_common(1)[0][0]
-    dominant_count = fingerprints.most_common(1)[0][1]
+    # Find ALL dominant fingerprints exceeding both thresholds
+    dominant_fps = set(
+        fp for fp, count in fingerprints.items()
+        if count > SMART_FILTER_MIN_COUNT and count > len(results) * SMART_FILTER_MIN_RATIO
+    )
 
-    if dominant_count <= 1000 or dominant_count <= len(results) * 0.5:
+    if not dominant_fps:
         return results
 
     outliers = [r for r in results if
-        (r.get('status'), r.get('length', 0), r.get('words', 0), r.get('lines', 0)) != dominant]
+        (r.get('status'), r.get('length', 0), r.get('words', 0), r.get('lines', 0))
+        not in dominant_fps]
 
     return outliers if outliers else [results[0]]
+
+
+def apply_filters(result):
+    if result.get('status') in FILTERED_STATUS_CODES:
+        return False
+    if result.get('words') in FILTERED_WORD_COUNTS:
+        return False
+    if result.get('length') in FILTERED_LENGTHS:
+        return False
+    return True
+
+
+def filter_results(results):
+    results = smart_filter(results)
+    results = [r for r in results if apply_filters(r)]
+    return results
 
 
 def process_file(input_path):
@@ -43,8 +65,7 @@ def process_file(input_path):
 
     results = data.get('results', data) if isinstance(data, dict) else data
 
-    kept = [r for r in results if apply_filters(r)]
-    kept = filter_results(kept)
+    kept = filter_results(results)
 
     if isinstance(data, dict) and 'results' in data:
         output = {**data, 'results': kept}
@@ -55,5 +76,3 @@ def process_file(input_path):
         json.dump(output, f, indent=2)
 
     return str(output_path)
-
-process_file(sys.argv[1])
