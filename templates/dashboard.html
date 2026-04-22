@@ -511,6 +511,13 @@ function filePopover(x, y, name, parts) {
         fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, name),
         style: 'color: orange'
       });
+    } else {
+      re_name = "re" + name
+      actions.push({
+        label: '⧩ Custom filter',
+        fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, re_name),
+        style: 'color: orange'
+      });
     }
   }
 
