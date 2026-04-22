@@ -111,6 +111,16 @@ def file_results():
 
     return jsonify(json.load(open(target)))
 
+@app.route('/api/results/raw')
+def raw_file():
+    rel_path = request.args.get('path', '')
+    target = (working_path / rel_path).resolve()
+    if not str(target).startswith(str(base_path.resolve())):
+        return jsonify({'error': 'forbidden'}), 403
+    if not target.exists():
+        return jsonify({'error': 'not found'}), 404
+    return target.read_text(errors='replace'), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
 @app.route('/api/filter', methods=['POST'])
 def custom_filter():
     body = request.get_json()

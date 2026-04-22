@@ -453,6 +453,19 @@ function buildTree(data, container) {
           e.stopPropagation();
           filePopover(e.clientX, e.clientY, f, parts);
         });
+        flabel.addEventListener('dblclick', function(e) {
+          e.stopPropagation();
+          var filePath = 'puf/' + parts.slice(1).join('/') + '/' + f;
+          // try viewJson first for .json, viewNmap for .xml, fallback to viewRaw
+          if (f === 'nmap.xml') {
+            viewNmap(parts[1]);
+          } else if (f.endsWith('.json')) {
+            var u = '/api/results/file?path=' + encodeURIComponent(filePath);
+            viewJson(u, f);
+          } else {
+            viewRaw(filePath, f);
+          }
+        });
         fli.appendChild(flabel);
         li.appendChild(fli);   // ← file added to li
       });
@@ -496,23 +509,23 @@ function folderPopover(x, y, name, parts) {
 
 function filePopover(x, y, name, parts) {
   var actions = [];
+  var filePath = 'puf/' + parts.slice(1).join('/') + '/' + name;
 
   if (name === 'nmap.xml') {
     actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[1]); } });
   } else if (name.endsWith('.json')) {
-    var filePath = 'puf/' + parts.slice(1).join('/') + '/' + name;
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
     actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
-
-    // was restricted to specific names — now any .json that isn't already filtered
-    allow_refilter = true
-    if (allow_refilter || (!name.endsWith('_f.json') && !name.endsWith('_cf.json'))) {
+    if (!name.endsWith('_f.json') && !name.endsWith('_cs.json')) {
       actions.push({
-      label: '<img src="/' + ICONS['icon_filter'] + '" class="tree-icon" style="filter:invert(60%) sepia(100%) saturate(500%) hue-rotate(0deg);"> Custom filter',
-      fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, name),
-    });
+        label: '<img src="/' + ICONS['icon_filter'] + '" class="tree-icon" style="filter:invert(60%) sepia(100%) saturate(500%) hue-rotate(0deg);"> Custom filter',
+        fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, name),
+      });
     }
   }
+
+  // "View file" available on every file
+  actions.push({ label: 'View file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
 
   if (actions.length) showPopover(x, y, name, actions);
 }
@@ -726,6 +739,17 @@ function getFileIcon(name) {
           : name.endsWith('.xml')  ? 'icon_file_xml'
           : 'icon_file_default';
   return '<img src="/' + ICONS[key] + '" class="tree-icon">';
+}
+
+function viewRaw(filePath, name) {
+  fetch('/api/results/raw?path=' + encodeURIComponent(filePath))
+    .then(function(r) { return r.text(); })
+    .then(function(content) {
+      var id = createTab(name, 'file');
+      setDot(id, 'done');
+      setPaneContent(id, '<pre class="scan-out" style="padding:16px;white-space:pre-wrap;word-break:break-all;">' +
+        content.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>');
+    });
 }
 
 // ── Init ──────────────────────────────────────
