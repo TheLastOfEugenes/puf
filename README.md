@@ -1,3 +1,22 @@
+
+```
+ a,  8a
+ `8, `8)                            ,adPPRg,
+  8)  ]8                        ,ad888888888b
+ ,8' ,8'                    ,gPPR888888888888
+,8' ,8'                 ,ad8""   `Y888888888P				  ______   __  __   ______    
+8)  8)              ,ad8""        (8888888""			     /_____/\ /_/\/_/\ /_____/\   
+8,  8,          ,ad8""            d888""				     \:::_ \ \\:\ \:\ \\::::_\/_  
+`8, `8,     ,ad8""            ,ad8""			 			  \:(_) \ \\:\ \:\ \\:\/___/\ 
+ `8, `" ,ad8""            ,ad8""			  				   \: ___\/ \:\ \:\ \\:::._\/ 
+    ,gPPR8b           ,ad8""							        \ \ \    \:\_\:\ \\:\ \   
+   dP:::::Yb      ,ad8""				 				         \_\/     \_____\/ \_\/   
+   8):::::(8  ,ad8""
+   Yb:;;;:d888""
+    "8ggg8P"
+```                          
+
+
 # Presentation
 Ports and Urls Filter is a tool supposed to help you fuzz targets. Its main functionalities are
 - Presentation of the results
@@ -21,6 +40,8 @@ For exegol users: here is a quick 2-liner to install puf and include it to your 
 echo "wget -qO- https://github.com/TheLastOfEugenes/puf/archive/refs/tags/v1.0.tar.gz | tar -xz -C /opt/ && mv /opt/puf-1.0 /opt/puf" >> $HOME/.exegol/my-resources/setup/load_user_setup.sh
 echo "alias puf='python3 /opt/puf/app.py'" >> $HOME/.exegol/my-resources/setup/zsh/aliases
 ```
+
+It is worth noting that for anyone wishing to use this app, nmap and ffuf are both required to be installed on the machine as well as python's flask.
 
 # Use guide
 
