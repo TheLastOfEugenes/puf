@@ -118,7 +118,7 @@ function stream(url, tabId, cmd, key) {
   logCommand(tabId, key || '', cmd || url);
   const src = new EventSource(url);
   let autoFilter = true;
-  
+
   src.onmessage = function(e) {
 
     if (e.data.startsWith('OUTFILE:')) {
@@ -140,7 +140,7 @@ function stream(url, tabId, cmd, key) {
       return;
     }
 
-    if (e.data === '[DONE]') {
+        if (e.data === '[DONE]') {
       updateLogDot(tabId, 'done');
       src.close();
       refreshTree();
@@ -151,26 +151,25 @@ function stream(url, tabId, cmd, key) {
 
       if (outfile && !killed) {
         if (kind === 'nmap') {
-            var target = outfile.split('/')[0];
-            viewNmap(target);
+          var target = outfile.split('/')[0];
+          viewNmap(target);
         } else {
-            var label = tabs[tabId].label + ' (' + kind + ')';
-            var label = tabs[tabId].label + ' (' + kind + ')';
-            if (autoFilter) {
+          var label = tabs[tabId].label + ' (' + kind + ')';
+          if (autoFilter) {
             var filteredOutfile = outfile.replace(/\.json$/, '_f.json');
             fetch('/api/results/file?path=' + encodeURIComponent('puf/' + filteredOutfile))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
                 var useFile = (data && data.results) ? filteredOutfile : outfile;
                 var u = '/api/results/file?path=' + encodeURIComponent('puf/' + useFile);
                 viewJson(u, label);
-                });
-            } else {
-                var u = '/api/results/file?path=' + encodeURIComponent('puf/' + outfile);
-                viewJson(u, label);
-            }
+              });
+          } else {
+            var u = '/api/results/file?path=' + encodeURIComponent('puf/' + outfile);
+            viewJson(u, label);
+          }
         }
-    }
+      }
 
       if (tabs[tabId]) {
         tabs[tabId].tab.remove();
@@ -230,7 +229,7 @@ function launchNmap(target) {
   var clean = rootDomain(target);
   var id = createTab(clean, 'nmap');
   fetch('/api/commands/get').then(function(r) { return r.json(); }).then(function(cmds) {
-    var cmd = cmds['nmap'].replace('{target}', clean).replace('{outfile}', '...');
+    var cmd = cmds['nmap'].replace('{target}', clean);
     stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id, cmd);
   });
   closePopover();
@@ -245,7 +244,7 @@ function launchFfuf(target, type) {
       .replace('{hostname}', new URL(target.startsWith('http') ? target : 'http://' + target).hostname)
       .replace(/-w\s+\S+/g, '-w {wordlist}')
       .replace(/-o\s+\S+/g, '-o {outfile}');
-    stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id, cmd);
+    stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id, cmd, type);
   });
   closePopover();
 }
@@ -624,8 +623,7 @@ function runCustomFilter() {
   };
   closeFilterModal();
   var filterId = 'filter_' + Date.now();
-  logCommand(filterId, 'filter', 'filter → ' + _filterTargetName);
-  fetch('/api/filter', {
+  logCommand(filterId, 'filter', '(' + _filterTargetName + ')');  fetch('/api/filter', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -776,7 +774,52 @@ function closeCmdEditModal() {
 }
 
 function runCmdFromPanel(key) {
-  alert('Use the tree or form to launch scans — this will be wired up soon.');
+  var row = document.getElementById('cmdrow_' + key);
+  
+  // if prompt already open, close it
+  var existing = document.getElementById('cmdpanel-prompt');
+  if (existing) {
+    existing.remove();
+    if (existing.dataset.key === key) return; // toggle off if same key
+  }
+
+  var prompt = document.createElement('div');
+  prompt.id = 'cmdpanel-prompt';
+  prompt.dataset.key = key;
+  prompt.style.cssText = 'display:flex;gap:6px;padding:4px 8px;border-bottom:1px solid var(--border);';
+  prompt.innerHTML =
+    '<input id="cmdpanel-target" type="text" placeholder="target (e.g. http://example.com)" ' +
+    'style="flex:1;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--r);padding:3px 6px;font-family:\'JetBrains Mono\',monospace;font-size:var(--xs);">' +
+    '<button class="btn-ghost primary" onclick="execCmdFromPanel(\'' + key + '\')">▶</button>' +
+    '<button class="btn-ghost" onclick="document.getElementById(\'cmdpanel-prompt\').remove()">✕</button>';
+
+  row.insertAdjacentElement('afterend', prompt);
+  document.getElementById('cmdpanel-target').focus();
+
+  // launch on Enter
+  document.getElementById('cmdpanel-target').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') execCmdFromPanel(key);
+  });
+}
+
+function execCmdFromPanel(key) {
+  var input = document.getElementById('cmdpanel-target');
+  if (!input) return;
+  var target = input.value.trim();
+  if (!target) return;
+
+  document.getElementById('cmdpanel-prompt').remove();
+
+  if (key === 'nmap') {
+    launchNmap(target);
+  } else if (key === 'fuzz') {
+    var url = target.startsWith('http') ? target : 'http://' + target;
+    launchFfuf(url, 'files');
+    launchFfuf(url, 'dirs');
+  } else if (key === 'fuzz_subs') {
+    var url = target.startsWith('http') ? target : 'http://' + target;
+    launchFfuf(url, 'subs');
+  }
 }
 
 // ── Init ──────────────────────────────────────
