@@ -181,7 +181,7 @@ def stream_nmap():
             cmd = custom_cmd.format(target=target, outfile=str(outfile)).split()
         else:
             cmd = ['python3', str(server_base_path / 'scans/nmap.py'), target, str(outfile)]
-
+        
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process
@@ -244,6 +244,7 @@ def stream_ffuf():
                 cmd = ['python3', str(server_base_path / 'scans/ffuf.py'),
                        target, parsed.hostname, wordlist, str(outfile), 'False']
 
+        print("CMD:", cmd, flush=True)
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process
