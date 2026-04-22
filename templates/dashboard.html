@@ -248,17 +248,19 @@ function viewNmap(target) {
       }
 
       var rows = '';
+      var idx = 0;
       data.forEach(function(host) {
-        host.ports.forEach(function(p, i) {
-          rows += '<tr>' +
-            (i === 0 ? '<td rowspan="' + host.ports.length + '">' + host.ip + '</td>' : '') +
+        host.ports.forEach(function(p) {
+          rows += '<tr class="result-row" id="rrow_' + id + '_' + idx + '" onclick="resultRowClick(event, \'' + host.ip + '\')">' +
+            '<td>' + host.ip + '</td>' +
             '<td>' + p.port + '</td>' +
             '<td>' + p.protocol + '</td>' +
-            '<td>' + p.state + '</td>' +
+            '<td class="status-' + (p.state === 'open' ? '2xx' : 'muted') + '">' + p.state + '</td>' +
             '<td>' + p.service + '</td>' +
             '<td class="muted">' + (p.version || '') + '</td>' +
-            '<td><button class="flag-btn" onclick="toggleFlag(this, \'nrow_' + id + '_' + i + '\')" title="Flag as target">⚑</button></td>' +
+            '<td><button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button></td>' +
             '</tr>';
+          idx++;
         });
       });
 
