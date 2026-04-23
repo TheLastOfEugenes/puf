@@ -56,6 +56,11 @@ commands = {
     'fuzz_subs': conf.get('commands', 'fuzz_subs', fallback=''),
 }
 
+
+
+
+# Helpers
+
 def get_auto_filter():
     return conf.getboolean('ffuf', 'auto_filter', fallback=True)
 
@@ -80,6 +85,27 @@ def get_root_domain(hostname):
         return hostname  # IP, don't strip
     parts = hostname.split('.')
     return '.'.join(parts[-2:]) if len(parts) > 2 else hostname
+
+def get_auto_filter():
+    return conf.getboolean('filtering', 'auto_filter', fallback=True)
+
+def get_filter_params():
+    def parse_list(val):
+        return [int(x.strip()) for x in val.split(',') if x.strip().isdigit()]
+    return {
+        'smart_enabled': conf.getboolean('filtering', 'smart_enabled', fallback=True),
+        'smart_limit':   conf.getint('filtering',    'smart_limit',    fallback=1000),
+        'status_codes':  parse_list(conf.get('filtering', 'status_codes', fallback='')),
+        'word_counts':   parse_list(conf.get('filtering', 'word_counts',  fallback='')),
+        'lengths':       parse_list(conf.get('filtering', 'lengths',      fallback='')),
+    }
+
+
+
+
+
+
+
 
 @app.route('/api/tree')
 def file_tree():
@@ -288,14 +314,11 @@ def stream_ffuf():
 
         if get_auto_filter():
             try:
+                params = get_filter_params()
                 run_custom_filter(
                     input_path=outfile,
-                    smart_enabled=True,
-                    smart_limit=1000,
-                    status_codes=[],
-                    word_counts=[],
-                    lengths=[],
-                    custom=False
+                    custom=False,
+                    **params
                 )
             except Exception as e:
                 yield f"data: [filter error: {e}]\n\n"
