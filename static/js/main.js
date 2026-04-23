@@ -341,6 +341,43 @@ function viewNmap(target) {
   closePopover();
 }
 
+function buildRows(results, id, startIdx, isSubs) {
+  var rows = '';
+  var idx = startIdx;
+
+  results.forEach(function(r, i) {
+    idx = startIdx + i;
+    var display = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
+    var host = isSubs ? new URL(r.url).hostname : '';
+    var clickTarget = isSubs ? 'http://' + display : r.url;
+    var duration = r.duration ? (r.duration / 1e6).toFixed(0) + 'ms' : '-';
+    var statusClass = 'status-' + Math.floor(r.status / 100) + 'xx';
+
+    rows += '<tr class="result-row" id="rrow_' + id + '_' + idx + '" onclick="resultRowClick(event, \'' + clickTarget + '\')">' +
+      '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
+      (isSubs ? '<td class="muted">' + host + '</td>' : '') +
+      '<td class="' + statusClass + '">' + r.status + '</td>' +
+      '<td class="muted">' + r.length + '</td>' +
+      '<td class="muted">' + r.words + '</td>' +
+      '<td class="muted">' + r.lines + '</td>' +
+      '<td class="muted">' + duration + '</td>' +
+      '<td style="display:flex;gap:4px;align-items:center;">' +
+        '<button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button>' +
+      '</td>' +
+      '</tr>';
+  });
+
+  // Footer row: always at the bottom of the table, showing only flagged rows
+  rows += '<tr id="footer_' + id + '" class="flagged-footer" style="background:var(--surface);border-top:1px solid var(--border);">' +
+    '<td colspan="8" style="padding:8px 0;">' +
+      '<div style="font-size:var(--xs);color:var(--muted);margin-bottom:4px;">Flagged in this view</div>' +
+      '<div id="footer-flagged-list_' + id + '" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:var(--xs);"></div>' +
+    '</td>' +
+    '</tr>';
+
+  return rows;
+}
+
 function viewJson(apiUrl, label) {
   var baseUrl = apiUrl.split('&offset=')[0].split('?offset=')[0];
   baseUrl = baseUrl.replace(/[&?]offset=\d+/, '').replace(/[&?]limit=\d+/, '');
@@ -412,35 +449,10 @@ function viewJson(apiUrl, label) {
       });
   }
 
-  function buildRows(results, id, startIdx, isSubs) {
-    var rows = '';
-    results.forEach(function(r, i) {
-      var idx = startIdx + i;
-      var display = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
-      var host = isSubs ? new URL(r.url).hostname : '';
-      var clickTarget = isSubs ? 'http://' + display : r.url;
-      var duration = r.duration ? (r.duration / 1e6).toFixed(0) + 'ms' : '-';
-      var statusClass = 'status-' + Math.floor(r.status / 100) + 'xx';
-
-      rows += '<tr class="result-row" id="rrow_' + id + '_' + idx + '" onclick="resultRowClick(event, \'' + clickTarget + '\')">' +
-        '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
-        (isSubs ? '<td class="muted">' + host + '</td>' : '') +
-        '<td class="' + statusClass + '">' + r.status + '</td>' +
-        '<td class="muted">' + r.length + '</td>' +
-        '<td class="muted">' + r.words + '</td>' +
-        '<td class="muted">' + r.lines + '</td>' +
-        '<td class="muted">' + duration + '</td>' +
-        '<td style="display:flex;gap:4px;align-items:center;">' +
-          '<button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button>' +
-        '</td>' +
-        '</tr>';
-    });
-    return rows;
-  }
-
   fetchPage(null);
   closePopover();
 }
+
 function viewRaw(filePath, name) {
   fetch('/api/results/raw?path=' + encodeURIComponent(filePath))
     .then(function(r) { return r.text(); })
@@ -456,37 +468,42 @@ function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
   var wasFlagged = row.classList.contains('flagged');
 
-  row.classList.toggle('flagged');
-  btn.classList.toggle('flagged');
+  // Extract tabId from rowId, e.g. rrow_json123_5 → json123
+  var match = rowId.match(/rrow_(.*?)_\d+$/);
+  if (!match) return;
+  var tabId = match[1];
+  var footerListId = 'footer-flagged-list_' + tabId;
+  var footerList = document.getElementById(footerListId);
+  if (!footerList) return;
+
+  var flagItem = document.getElementById('flagged_footer_' + rowId);
 
   if (wasFlagged) {
-    // unflagged → remove from panel
-    var item = document.getElementById('flagged_' + rowId);
-    if (item) item.remove();
-    if (document.getElementById('flagged-list').children.length === 0) {
-      document.getElementById('flagged-panel').style.display = 'none';
-    }
+    // UNFLAG
+    row.classList.remove('flagged');
+    btn.classList.remove('flagged');
+    if (flagItem) flagItem.remove();
   } else {
-    // newly flagged
-    var flagPanel = document.getElementById('flagged-list');
-    var flagItem = document.getElementById('flagged_' + rowId);
-    if (flagItem) return; // already exists
+    // FFLAG, add to footer
+    row.classList.add('flagged');
+    btn.classList.add('flagged');
 
-    flagItem = document.createElement('div');
-    flagItem.id = 'flagged_' + rowId;
+    if (!flagItem) {
+      var urlCell = row.querySelector('td a') || row.querySelector('td .result-url');
+      var text = urlCell ? urlCell.textContent : 'Unknown';
 
-    var urlCell = row.querySelector('td a') || row.querySelector('td .result-url');
-    var url = urlCell ? urlCell.href : '';
-    var text = urlCell ? urlCell.textContent : 'Unknown';
+      flagItem = document.createElement('div');
+      flagItem.id = 'flagged_footer_' + rowId;
+      flagItem.innerHTML =
+        '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
+          'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' +
+          text +
+        '</span>' +
+        '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
+          'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
 
-    flagItem.innerHTML =
-      '<span style="color:var(--blue);cursor:pointer;font-weight:500;" ' +
-        'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' +
-        text +
-      '</span>';
-
-    flagPanel.appendChild(flagItem);
-    document.getElementById('flagged-panel').style.display = 'block';
+      footerList.appendChild(flagItem);
+    }
   }
 }
 
@@ -551,6 +568,13 @@ function refreshTree() {
     });
 }
 
+function getFileCssClass(name) {
+  if (name.endsWith('.xml')) return 'tree-file-nmap';
+  if (name.endsWith('_f.json')) return 'tree-file-filtered';
+  if (name.endsWith('_custom_filtered.json')) return 'tree-file-custom-filtered';
+  return 'tree-file-raw';
+}
+
 function buildTree(data, container) {
   Object.keys(data).forEach(function(path) {
     var node = data[path];
@@ -562,7 +586,7 @@ function buildTree(data, container) {
     var li = document.createElement('li');
     var label = document.createElement('div');
     label.className = 'tree-label';
-    label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%';
+    label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%;';
     label.innerHTML =
       getFolderIcon(depth) +
       '<span style="flex:1">' + name + '</span>' +
@@ -583,13 +607,13 @@ function buildTree(data, container) {
 
         var flabel = document.createElement('div');
         flabel.className = 'tree-label file ' + cssClass;
-        flabel.style.cssText = 'padding-left:calc(' + fileIndent + ' + 14px);display:flex;align-items:center;width:100%';
+        flabel.style.cssText = 'padding-left:calc(' + fileIndent + ' + 14px);display:flex;align-items:center;width:100%;';
         flabel.innerHTML =
           fileIcon +
           '<span style="flex:1">' + f + '</span>' +
           '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '/' + f + '\',\'' + f + '\')">&#x2715;</button>';
 
-          flabel.addEventListener('click', function(e) {
+        flabel.addEventListener('click', function(e) {
           e.stopPropagation();
           filePopover(e.clientX, e.clientY, f, parts);
         });
@@ -604,6 +628,7 @@ function buildTree(data, container) {
             viewRaw(filePath, f);
           }
         });
+
         fli.appendChild(flabel);
         li.appendChild(fli);
       });
@@ -990,42 +1015,48 @@ function exportFlagged() {
   });
 }
 
-// In your JS, add this helper
-function getFileCssClass(name) {
-  if (name.endsWith('.xml')) return 'tree-file-nmap';
-  if (name.endsWith('_f.json')) return 'tree-file-filtered';      // auto‑filtered
-  if (name.endsWith('_custom_filtered.json')) return 'tree-file-custom-filtered';
-  return 'tree-file-raw';
-}
-
 function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
   var wasFlagged = row.classList.contains('flagged');
 
-  row.classList.toggle('flagged');
-  btn.classList.toggle('flagged');
+  var match = rowId.match(/rrow_(.*?)_(\d+)$/);
+  if (!match) return;  // not a ffuf result row
+
+  var tabId = match[1];  // e.g. 'json123'
+  var footerListId = 'footer-flagged-list_' + tabId;
+  var footerList = document.getElementById(footerListId);
+
+  if (!footerList) return;
+
+  var flagItem = document.getElementById('flagged_footer_' + rowId);
 
   if (wasFlagged) {
-    // unflagged → remove from bottom panel
-    var item = document.getElementById('flagged_' + rowId);
-    if (item) item.remove();
+    // unflagged
+    row.classList.remove('flagged');
+    btn.classList.remove('flagged');
+
+    if (flagItem) flagItem.remove();
+
   } else {
     // newly flagged
-    var flagPanel = document.getElementById('flagged-list');
-    var flagItem = document.createElement('div');
-    flagItem.id = 'flagged_' + rowId;
+    row.classList.add('flagged');
+    btn.classList.add('flagged');
 
-    var urlCell = row.querySelector('td a'); // or .result-url
-    var url = urlCell ? urlCell.href : 'Unknown';
-    var text = urlCell ? urlCell.textContent : 'Unknown';
+    if (!flagItem) {
+      var urlCell = row.querySelector('td a') || row.querySelector('td .result-url');
+      var text = urlCell ? urlCell.textContent : 'Unknown';
 
-    flagItem.innerHTML =
-      '<span style="color:var(--blue);cursor:pointer;" onclick="document.getElementById(\'' + rowId + '\').scrollIntoView();document.getElementById(\'' + rowId + '\').click();">' +
-        text +
-      '</span>';
+      flagItem = document.createElement('div');
+      flagItem.id = 'flagged_footer_' + rowId;
+      flagItem.innerHTML =
+        '<span style="color:var(--blue);font-weight:500;cursor:pointer;white-space:nowrap;" ' +
+          'onclick="toggleFlag(document.getElementById(\'flag_btn_' + rowId + '\'), \'' + rowId + '\')">' +
+          text +
+        '</span>' +
+        '<button id="flag_btn_' + rowId + '" style="font-size:var(--xs);color:var(--muted);padding:0 4px;">✕</button>';
 
-    flagPanel.appendChild(flagItem);
-    document.getElementById('flagged-panel').style.display = 'block';
+      footerList.appendChild(flagItem);
+    }
   }
 }
 

@@ -298,7 +298,7 @@ input[type=number] { -moz-appearance: textfield; }
   padding: 0 4px;
 }
 
-.tree-file-nmap { color: var(--blue); }
-.tree-file-filtered { color: var(--green); }
+.tree-file-nmap       { color: var(--blue); }
+.tree-file-filtered   { color: var(--green); }
 .tree-file-custom-filtered { color: var(--purple); }
-.tree-file-raw { color: initial; }
+.tree-file-raw         { color: initial; }
