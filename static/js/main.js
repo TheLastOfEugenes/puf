@@ -608,16 +608,26 @@ function buildTree(data, container) {
 
     var li = document.createElement('li');
     var label = document.createElement('div');
+
+    // Check if this is the "exports" folder
+    var isExports = parts.length >= 1 && parts[parts.length - 1] === 'exports';
+
+    var src = isExports
+      ? ICONS['icon_exports'] || ICONS['icon_depth_0']
+      : (ICONS['icon_depth_' + depth] || ICONS['icon_depth_0']);
+
     label.className = 'tree-label';
     label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%;';
     label.innerHTML =
-      getFolderIcon(depth) +
+      '<img src="/' + src + '" class="tree-icon">' +
       '<span style="flex:1">' + name + '</span>' +
       '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '\',\'' + name + '\')">&#x2715;</button>';
+
     label.addEventListener('click', function(e) {
       e.stopPropagation();
       folderPopover(e.clientX, e.clientY, name, parts);
     });
+
     li.appendChild(label);
 
     if (node.files && node.files.length) {
@@ -704,6 +714,7 @@ function filePopover(x, y, name, parts) {
   var filePath = 'puf/' + parts.slice(1).join('/') + '/' + name;
   if (name.endsWith('.xml')) {
     actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[1]); } });
+    actions.push({ label: 'View raw file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
   } else if (name.endsWith('.json')) {
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
     actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
