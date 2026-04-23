@@ -106,6 +106,16 @@ def get_filter_params():
 
 
 
+@app.route('/api/export/flagged', methods=['POST'])
+def export_flagged():
+    body = request.get_json()
+    rows = body.get('rows', [])
+    exports = base_path / 'exports'
+    exports.mkdir(parents=True, exist_ok=True)
+    out = exports / f"flagged_{int(__import__('time').time())}.json"
+    with open(out, 'w') as f:
+        json.dump({'flagged': rows}, f, indent=2)
+    return jsonify({'output_path': str(out.relative_to(base_path))})
 
 @app.route('/api/autofilter/toggle', methods=['POST'])
 def toggle_auto_filter():
@@ -317,6 +327,7 @@ def stream_ffuf():
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process
+        yield f"data: WORDLIST:{wordlist}\n\n"
         yield f"data: OUTFILE:{str(outfile.relative_to(base_path))}\n\n"
         for line in iter(process.stdout.readline, ''):
             m = re.search(r'\[(\d+)/(\d+)\]', line)

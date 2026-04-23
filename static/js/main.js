@@ -137,6 +137,20 @@ function stream(url, tabId, cmd, key, resolvedCmd) {
       }
       return;
     }
+    
+    if (e.data.startsWith('WORDLIST:')) {
+      if (tabs[tabId]) tabs[tabId].wordlist = e.data.split(':').slice(1).join(':');
+      var entry = document.getElementById('cmdlog_' + tabId);
+      if (entry && tabs[tabId] && tabs[tabId].wordlist) {
+        var cmdText = entry.querySelector('.cmd-text');
+        if (cmdText) {
+          var updated = cmdText.getAttribute('title').replace('{wordlist}', tabs[tabId].wordlist);
+          cmdText.setAttribute('title', updated);
+          entry.dataset.resolved = updated;
+        }
+      }
+      return;
+    }
 
     if (e.data.startsWith('PROGRESS:')) {
       var val = e.data.split(':')[1];
@@ -252,6 +266,7 @@ function launchFfuf(target, type) {
   fetch('/api/commands/get').then(function(r) { return r.json(); }).then(function(cmds) {
     var key = type === 'subs' ? 'fuzz_subs' : 'fuzz';
     var hostname = new URL(target.startsWith('http') ? target : 'http://' + target).hostname;
+
     var resolved = cmds[key]
       .replace('{target}', target)
       .replace('{hostname}', hostname);
@@ -259,6 +274,10 @@ function launchFfuf(target, type) {
     var display = resolved
       .replace(/-w\s+\S+/g, '-w {wordlist}')
       .replace(/-o\s+\S+/g, '-o {outfile}');
+
+    if (_recurseEnabled && (type === 'files' || type === 'dirs')) {
+      display += ' -recursion -recursion-depth ' + depth;
+    }
 
     var depth = parseInt(document.getElementById('recurse-depth').value) || 2;
     stream(
@@ -623,7 +642,9 @@ function openFilterModal(path, name) {
   document.getElementById('fm-status').value = '';
   document.getElementById('fm-words').value = '';
   document.getElementById('fm-lengths').value = '';
+  document.getElementById('fm-regex').value = '';
   document.getElementById('filter-modal').style.display = 'flex';
+
 
   ['fm-status-mode','fm-words-mode','fm-lengths-mode', 'fm-regex-mode'].forEach(function(id) {
     var btn = document.getElementById(id);
@@ -915,20 +936,21 @@ function exportFlagged() {
   rows.forEach(function(row) {
     var cells = row.querySelectorAll('td');
     results.push({
-      url:    cells[0].textContent.trim(),
-      status: cells[1] ? cells[1].textContent.trim() : '',  // adjust index if subs
+      url: cells[0] ? cells[0].textContent.trim() : '',
+      status: cells[1] ? cells[1].textContent.trim() : '',
       length: cells[2] ? cells[2].textContent.trim() : '',
-      words:  cells[3] ? cells[3].textContent.trim() : '',
-      lines:  cells[4] ? cells[4].textContent.trim() : '',
-      time:   cells[5] ? cells[5].textContent.trim() : '',
+      words: cells[3] ? cells[3].textContent.trim() : '',
+      lines: cells[4] ? cells[4].textContent.trim() : '',
+      time: cells[5] ? cells[5].textContent.trim() : ''
     });
   });
 
-  var blob = new Blob([JSON.stringify({ flagged: results }, null, 2)], { type: 'application/json' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'flagged_' + Date.now() + '.json';
-  a.click();
+  fetch('/api/export/flagged', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({rows: results})
+  }).then(function(r) { return r.json(); })
+    .then(function(data) { alert('Saved to ' + data.output_path); });
 }
 
 // ── Init ──────────────────────────────────────
