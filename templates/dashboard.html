@@ -48,7 +48,10 @@
       <div id="cmd-panel">
         <div class="bar-title" style="display:flex;align-items:center;justify-content:space-between;">
           Commands
-          <button class="btn-ghost" onclick="resetCommands()" title="Reset all commands to defaults" style="font-size:var(--xs);">↺ reset</button>
+          <div style="display:flex;gap:6px;">
+            <button id="autofilter-btn" class="btn-ghost" onclick="toggleAutoFilter()" title="Toggle auto-filter"></button>
+            <button class="btn-ghost" onclick="resetCommands()" title="Reset all commands to defaults">↺ reset</button>
+          </div>
         </div>
         <div id="cmd-panel-list"></div>
       </div>

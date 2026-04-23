@@ -851,6 +851,19 @@ function execCmdFromPanel(key) {
   }
 }
 
+function toggleAutoFilter() {
+  fetch('/api/autofilter/toggle', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) { setAutoFilterBtn(data.auto_filter); });
+}
+
+function setAutoFilterBtn(enabled) {
+  var btn = document.getElementById('autofilter-btn');
+  if (!btn) return;
+  btn.textContent = enabled ? '⬤ filter' : '○ filter';
+  btn.style.color  = enabled ? 'var(--blue)' : 'var(--muted)';
+}
+
 // ── Init ──────────────────────────────────────
 fetch('/api/config/icons')
   .then(function(r) { return r.json(); })
@@ -859,4 +872,17 @@ fetch('/api/config/icons')
     refreshTree();
     setInterval(refreshTree, 5000);
     initCmdPanel();
+  });
+
+fetch('/api/config/icons')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    ICONS = data;
+    refreshTree();
+    setInterval(refreshTree, 5000);
+    initCmdPanel();
+    // ── init auto-filter button state ──
+    fetch('/api/autofilter/get')
+      .then(function(r) { return r.json(); })
+      .then(function(data) { setAutoFilterBtn(data.auto_filter); });
   });

@@ -56,13 +56,12 @@ commands = {
     'fuzz_subs': conf.get('commands', 'fuzz_subs', fallback=''),
 }
 
+auto_filter_override = None  # None = use conf, True/False = session override
+
 
 
 
 # Helpers
-
-def get_auto_filter():
-    return conf.getboolean('ffuf', 'auto_filter', fallback=True)
 
 def get_wordlist(type):
     return conf.get('wordlists', type, fallback={
@@ -87,6 +86,8 @@ def get_root_domain(hostname):
     return '.'.join(parts[-2:]) if len(parts) > 2 else hostname
 
 def get_auto_filter():
+    if auto_filter_override is not None:
+        return auto_filter_override
     return conf.getboolean('filtering', 'auto_filter', fallback=True)
 
 def get_filter_params():
@@ -106,6 +107,15 @@ def get_filter_params():
 
 
 
+@app.route('/api/autofilter/toggle', methods=['POST'])
+def toggle_auto_filter():
+    global auto_filter_override
+    auto_filter_override = not get_auto_filter()
+    return jsonify({'auto_filter': auto_filter_override})
+
+@app.route('/api/autofilter/get')
+def get_auto_filter_state():
+    return jsonify({'auto_filter': get_auto_filter()})
 
 @app.route('/api/tree')
 def file_tree():
