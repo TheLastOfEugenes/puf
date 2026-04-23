@@ -529,6 +529,7 @@ function toggleFlag(btn, rowId) {
     // Update button state (assumes btn has class 'flagged' when active)
     btn.classList.toggle('flagged', nowFlagged);
   }
+  btn.classList.toggle('flagged', nowFlagged);
 
   // Sync global flagged panel
   var flagPanel = document.getElementById('flagged-list');
