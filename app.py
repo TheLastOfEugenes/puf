@@ -198,12 +198,15 @@ def custom_filter():
     body = request.get_json()
     try:
         output_path = run_custom_filter(
-            input_path   = working_path / body['path'],
-            smart_enabled= body.get('smart_enabled', True),
-            smart_limit  = body.get('smart_limit', 1000),
-            status_codes = body.get('status_codes', []),
-            word_counts  = body.get('word_counts', []),
-            lengths      = body.get('lengths', [])
+            input_path        = working_path / body['path'],
+            smart_enabled     = body.get('smart_enabled', True),
+            smart_limit       = body.get('smart_limit', 1000),
+            status_codes      = body.get('status_codes', []),
+            status_codes_keep = body.get('status_codes_keep', False),
+            word_counts       = body.get('word_counts', []),
+            word_counts_keep  = body.get('word_counts_keep', False),
+            lengths           = body.get('lengths', []),
+            lengths_keep      = body.get('lengths_keep', False),
         )
         return jsonify({'output_path': output_path})
     except Exception as e:
