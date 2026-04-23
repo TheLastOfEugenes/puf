@@ -237,7 +237,7 @@ input[type=number] { -moz-appearance: textfield; }
 #cmd-log-and-panel {
   display: flex;
   flex: 1;
-  border-top: 1px solid var(--border);
+  min-height: 0;
 }
 
 #flagged-list {
@@ -250,17 +250,14 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
-  overflow: hidden;
+  min-height: 0;
 }
 
 #cmd-log-list {
   overflow-y: auto;
   flex: 1;
-  font-size: var(--xs);
+  min-height: 0;
   font-family: 'JetBrains Mono', monospace;
-  /* optional: show more obvious scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) var(--surface);
 }
 
 #cmd-log-list::-webkit-scrollbar {

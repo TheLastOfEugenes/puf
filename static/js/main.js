@@ -508,14 +508,12 @@ function buildFlaggedItemHtml(row, rowId) {
 }
 
 function toggleFlag(btn, rowId) {
-  console.log("flag has been clicked")
   var match = rowId.match(/^rrow/);
   if (!match) return;
   
   var row = document.getElementById(rowId);
   var wasFlagged = flaggedRows.has(rowId);
   var nowFlagged = !wasFlagged;
-  console.log('rowId:', rowId, 'wasFlagged:', wasFlagged, 'row exists?', !!row);
 
   if (nowFlagged) flaggedRows.add(rowId);
   else flaggedRows.delete(rowId);
@@ -895,19 +893,8 @@ function logCommand(tabId, key, cmd, resolvedCmd) {
     cmd +
     '</span>';
 
-  var entries = list.querySelectorAll('.cmd-log-entry');
-  var firstRunning = null;
-  entries.forEach(function(e) {
-    var dot = e.querySelector('.tab-dot');
-    if (dot && dot.classList.contains('running') && !firstRunning) firstRunning = e;
-  });
-  if (firstRunning) {
-    list.insertBefore(entry, firstRunning);
-  } else {
-    list.appendChild(entry);
-  }
-
-  list.scrollTop = list.scrollHeight;
+  list.appendChild(entry);
+  setTimeout(() => { list.scrollTop = list.scrollHeight; }, 0);
 }
 
 function updateLogDot(tabId, state) {
