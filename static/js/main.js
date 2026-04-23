@@ -276,10 +276,11 @@ function launchFfuf(target, type) {
       .replace(/-o\s+\S+/g, '-o {outfile}');
 
     if (_recurseEnabled && (type === 'files' || type === 'dirs')) {
+      var depth = parseInt(document.getElementById('recurse-depth').value) || 2;
       display += ' -recursion -recursion-depth ' + depth;
+      resolved += ' -recursion -recursion-depth ' + depth;
     }
 
-    var depth = parseInt(document.getElementById('recurse-depth').value) || 2;
     stream(
       '/api/scan/ffuf?target=' + encodeURIComponent(target) +
       '&type=' + type +
