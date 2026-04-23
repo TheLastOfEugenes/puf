@@ -99,6 +99,7 @@ def get_filter_params():
         'status_codes':  parse_list(conf.get('filtering', 'status_codes', fallback='')),
         'word_counts':   parse_list(conf.get('filtering', 'word_counts',  fallback='')),
         'lengths':       parse_list(conf.get('filtering', 'lengths',      fallback='')),
+        'regex':         conf.get('filtering', 'regex', fallback=''),
     }
 
 
@@ -227,6 +228,8 @@ def custom_filter():
             word_counts_keep  = body.get('word_counts_keep', False),
             lengths           = body.get('lengths', []),
             lengths_keep      = body.get('lengths_keep', False),
+            regex             = body.get('regex', '') or conf.get('filtering', 'regex', fallback=''),
+            regex_keep        = body.get('regex_keep', False),
         )
         return jsonify({'output_path': output_path})
     except Exception as e:

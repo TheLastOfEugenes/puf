@@ -9,6 +9,9 @@ def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
     input_path = Path(input_path)
     output_path = get_output_path(input_path, custom)
 
+    print("custom filter")
+    print(regex)
+
     with open(input_path) as f:
         data = json.load(f)
 
