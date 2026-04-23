@@ -12,6 +12,7 @@
   --green:    #3fb950;
   --yellow:   #d29922;
   --red:      #f85149;
+  --purple:   #a25cff;
   --font:     'JetBrains Mono', 'Fira Code', monospace;
   --xs:       0.72rem;
   --sm:       0.825rem;
@@ -252,12 +253,13 @@ input[type=number] { -moz-appearance: textfield; }
   width: 620px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 #cmd-panel-list {
   overflow-y: auto;
   flex: 1;
+  font-size: var(--xs);
+  /*border-top: 1px solid var(--border);*/
 }
 
 .bar-title {
