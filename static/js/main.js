@@ -424,16 +424,19 @@ function viewJson(apiUrl, label) {
 
           setPaneContent(tabId, html);
 
-          // After the table is in the DOM, re‑apply existing flags
-          queueMicrotask(() => {
+          // Re-apply flags after table is built
+          queueMicrotask(function() {
             results.forEach(function(r, i) {
               var idx = i;
               var rowId = 'rrow_' + tabId + '_' + idx;
               if (flaggedRows.has(rowId)) {
                 var row = document.getElementById(rowId);
-                var btn = row ? row.querySelector('.flag-btn') : null;
-                if (row) row.classList.add('flagged');
-                if (btn) btn.classList.add('flagged');
+                if (row) {
+                  row.classList.add('flagged');
+                  // Find and flag the button too
+                  var btn = row.querySelector('button[onclick*="\'" + rowId + "\'"]');
+                  if (btn) btn.classList.add('flagged');
+                }
               }
             });
           });
@@ -505,75 +508,46 @@ function buildFlaggedItemHtml(row, rowId) {
 }
 
 function toggleFlag(btn, rowId) {
+  // Validate rowId pattern (rrow_tabId_idx)
+  var match = rowId.match(/rrow_.+?_\\d+$/);
+  if (!match) return;
+
   var row = document.getElementById(rowId);
-
-  // Read from global flaggedRows (the truth)
   var wasFlagged = flaggedRows.has(rowId);
+  var nowFlagged = !wasFlagged;
 
-  // Flip global state
-  if (wasFlagged) {
-    flaggedRows.delete(rowId);
-  } else {
+  // Always update central state first
+  if (nowFlagged) {
     flaggedRows.add(rowId);
+  } else {
+    flaggedRows.delete(rowId);
   }
 
-  // Update row & button visual state
-  if (row){
-    row.classList.toggle('flagged', !wasFlagged);
+  // Sync row visuals if it exists
+  if (row) {
+    row.classList.toggle('flagged', nowFlagged);
+    // Update button state (assumes btn has class 'flagged' when active)
+    btn.classList.toggle('flagged', nowFlagged);
   }
-  btn.classList.toggle('flagged', !wasFlagged);
 
   // Sync global flagged panel
   var flagPanel = document.getElementById('flagged-list');
-  var flagItem = document.getElementById('flagged_' + rowId);
-
-  if (wasFlagged) {
-    // UNFLAG: remove from panel
-    if (flagItem) flagItem.remove();
+  if (nowFlagged) {
+    // Add to panel (use your existing flagItem creation logic here)
+    var flagItem = document.createElement('div');
+    flagItem.innerHTML = 'Your URL/text for ' + rowId + 
+      '<button style="background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
+      'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
+    flagPanel.appendChild(flagItem.firstChild);  // Append the inner element
+    document.getElementById('flagged-panel').style.display = 'flex';
+  } else {
+    // Remove from panel
+    var items = flagPanel.querySelectorAll('[onclick*="\'" + rowId + "\'"]');
+    items.forEach(function(item) { item.parentNode.remove(); });
     if (flagPanel.children.length === 0) {
       document.getElementById('flagged-panel').style.display = 'none';
     }
-    return;
   }
-
-  // FLAG: add to panel
-  if (flagItem) return; // already exists
-
-  flagItem = document.createElement('div');
-  flagItem.id = 'flagged_' + rowId;
-  flagItem.style.cssText = 'display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid transparent;';
-
-  // Get fields from the row
-  var urlCell   = row.querySelector('td a') || row.querySelector('td .result-url');
-  var statusCell = row.querySelector('td:nth-child(3)');
-  var lengthCell = row.querySelector('td:nth-child(4)');
-  var wordsCell  = row.querySelector('td:nth-child(5)');
-  var linesCell  = row.querySelector('td:nth-child(6)');
-  var timeCell   = row.querySelector('td:nth-child(7)');
-
-  var url    = urlCell   ? urlCell.textContent : 'Unknown';
-  var status = statusCell ? statusCell.textContent : '';
-  var length = lengthCell ? lengthCell.textContent : '';
-  var words  = wordsCell  ? wordsCell.textContent  : '';
-  var lines  = linesCell  ? linesCell.textContent  : '';
-  var time   = timeCell   ? timeCell.textContent   : '';
-
-  var clickUrl = urlCell ? urlCell.href : '';
-
-  flagItem.innerHTML =
-    '<a href="' + clickUrl + '" target="_blank" style="color:var(--blue);flex:2;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">' +
-      url +
-    '</a>' +
-    '<span style="flex:0.5;color:var(--muted);">' + status + '</span>' +
-    '<span style="flex:0.5;color:var(--muted);">' + length + '</span>' +
-    '<span style="flex:0.5;color:var(--muted);">' + words + '</span>' +
-    '<span style="flex:0.5;color:var(--muted);">' + lines + '</span>' +
-    '<span style="flex:0.5;color:var(--muted);">' + time + '</span>' +
-    '<button style="flex:0;font-size:var(--xs);padding:0 8px;background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
-      'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
-
-  flagPanel.appendChild(flagItem);
-  document.getElementById('flagged-panel').style.display = 'flex';
 }
 
 // ── Popover ───────────────────────────────────
