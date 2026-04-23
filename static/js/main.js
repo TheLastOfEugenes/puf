@@ -509,9 +509,9 @@ function buildFlaggedItemHtml(row, rowId) {
 
 function toggleFlag(btn, rowId) {
   console.log("flag has been clicked")
-  var match = rowId.match(/rrow(\d+)/);
+  var match = rowId.match(/^rrow/);
   if (!match) return;
-
+  
   var row = document.getElementById(rowId);
   var wasFlagged = flaggedRows.has(rowId);
   var nowFlagged = !wasFlagged;
