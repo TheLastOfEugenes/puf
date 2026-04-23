@@ -37,7 +37,7 @@ git clone https://github.com/TheLastOfEugenes/puf.git
 
 For exegol users: here is a quick 2-liner to install puf and include it to your image.
 ```
-echo "wget -qO- https://github.com/TheLastOfEugenes/puf/archive/refs/tags/v1.0.tar.gz | tar -xz -C /opt/ && mv /opt/puf-1.0 /opt/puf" >> $HOME/.exegol/my-resources/setup/load_user_setup.sh
+echo "wget -qO- https://github.com/TheLastOfEugenes/puf/archive/refs/tags/v1.2.tar.gz | tar -xz -C /opt/ && mv /opt/puf-1.2 /opt/puf" >> $HOME/.exegol/my-resources/setup/load_user_setup.sh
 echo "alias puf='python3 /opt/puf/app.py'" >> $HOME/.exegol/my-resources/setup/zsh/aliases
 ```
 
@@ -121,10 +121,10 @@ The other big functionnality of this tool is the ability to sort yourself the re
 Forget the shady auto sorting of ffuf (ok I'll admit it's a good one but still) become the master of your own files.
 
 When clicking on a json file then "custom filter" the user will be prompted with a window with a few options. This window allows a user to enter himself the parameters of his filter:
-- enable/disable smart-filtering (default: enabled)
-- count of packages to activate smart filtering
-- add response statuses to filter out (example: 404, 301)
-- add content length to filter out (example: if all error responses have the length 1812, you can filter out all responses with length 1812)
+- enable/disable smart-filtering (default: enabled).
+- count of packages to activate smart filtering.
+- add response statuses to filter out (example: 404, 301) or filter by.
+- add content length to filter out (example: if all error responses have the length 1812, you can filter out all responses with length 1812) or filter by.
 - add words count filter.
 ![json_file_filter](https://raw.githubusercontent.com/TheLastOfEugenes/puf/master/resources/json_file_filter.png)
 
@@ -144,6 +144,9 @@ When a process has been started, if you wish to stop the process before it natur
 
 ### Other commands
 As part of the package, in the `aliases` file, you will find the bash commands that allow using these commands without having to use the gui entirely, the output is still readable using cat or jq. The filtering function, on the other hand, hasn't been uploaded yet, it is reserved to the gui for now.
+
+### Commands
+The commands ran for nmap, fuzzing files and directories or fuzzing subdomains can be modified from the lower part of the screen, on the right side. If any modification is made here, the new command wwill be run on each started corresponded scan. This can be verified by checking the commands log.
 
 ### config file
 The file `puf.conf` allows you to change different specifications for the appliation such as:
