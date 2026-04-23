@@ -608,26 +608,16 @@ function buildTree(data, container) {
 
     var li = document.createElement('li');
     var label = document.createElement('div');
-
-    // Check if this is the "exports" folder
-    var isExports = parts.length >= 1 && parts[parts.length - 1] === 'exports';
-
-    var src = isExports
-      ? ICONS['icon_exports'] || ICONS['icon_depth_0']
-      : (ICONS['icon_depth_' + depth] || ICONS['icon_depth_0']);
-
     label.className = 'tree-label';
     label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%;';
     label.innerHTML =
-      '<img src="/' + src + '" class="tree-icon">' +
+      getFolderIcon(depth) +
       '<span style="flex:1">' + name + '</span>' +
       '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '\',\'' + name + '\')">&#x2715;</button>';
-
     label.addEventListener('click', function(e) {
       e.stopPropagation();
       folderPopover(e.clientX, e.clientY, name, parts);
     });
-
     li.appendChild(label);
 
     if (node.files && node.files.length) {
@@ -688,8 +678,6 @@ function getFileIcon(name) {
 
 // ── Popovers ──────────────────────────────────
 function folderPopover(x, y, name, parts) {
-  if (parts.includes('exports')) return;
-
   var actions = [];
   if (parts.length === 1) return;
   if (parts.length === 2) {
@@ -716,7 +704,6 @@ function filePopover(x, y, name, parts) {
   var filePath = 'puf/' + parts.slice(1).join('/') + '/' + name;
   if (name.endsWith('.xml')) {
     actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[1]); } });
-    actions.push({ label: 'View raw file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
   } else if (name.endsWith('.json')) {
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
     actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
@@ -844,8 +831,6 @@ function deletePath(path, label) {
 // ── Command Log ───────────────────────────────
 function logCommand(tabId, key, cmd, resolvedCmd) {
   var list = document.getElementById('cmd-log-list');
-  if (!list) return;
-
   var now = new Date();
   var time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
 
@@ -868,17 +853,13 @@ function logCommand(tabId, key, cmd, resolvedCmd) {
     var dot = e.querySelector('.tab-dot');
     if (dot && dot.classList.contains('running') && !firstRunning) firstRunning = e;
   });
-
   if (firstRunning) {
     list.insertBefore(entry, firstRunning);
   } else {
     list.appendChild(entry);
   }
 
-  // Force scroll after layout has settled (1 microtask)
-  queueMicrotask(() => {
-    list.scrollTop = list.scrollHeight;
-  });
+  list.scrollTop = list.scrollHeight;
 }
 
 function updateLogDot(tabId, state) {
