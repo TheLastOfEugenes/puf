@@ -199,17 +199,34 @@ input[type=number] { -moz-appearance: textfield; }
 
 #bottom-bar {
   display: flex;
-  height: 140px;
+  flex-direction: column;
+  min-height: 140px;
   border-top: 1px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
+}
+
+#flagged-panel {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  font-size: var(--xs);
+  box-sizing: border-box;
+}
+
+#flagged-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
 }
 
 #cmd-log {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   overflow: hidden;
 }
 

@@ -615,15 +615,18 @@ function buildTree(data, container) {
         var fileIndent = ((depth + 1) * 14) + 'px';
         var fli = document.createElement('li');
 
-        var fileIcon = getFileIcon(f);
-        var cssClass = getFileCssClass(f);
+        // Extract basename from full path
+        var basename = f.split('/').pop() || f;
+
+        var fileIcon = getFileIcon(basename);
+        var cssClass = getFileCssClass(basename);
 
         var flabel = document.createElement('div');
         flabel.className = 'tree-label file ' + cssClass;
         flabel.style.cssText = 'padding-left:calc(' + fileIndent + ' + 14px);display:flex;align-items:center;width:100%;';
         flabel.innerHTML =
           fileIcon +
-          '<span style="flex:1">' + f + '</span>' +
+          '<span style="flex:1">' + f + '</span>' +   // keep path in text if you want
           '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '/' + f + '\',\'' + f + '\')">&#x2715;</button>';
 
         flabel.addEventListener('click', function(e) {
@@ -1034,6 +1037,7 @@ function toggleFlag(btn, rowId) {
 
   row.classList.toggle('flagged');
   btn.classList.toggle('flagged');
+  
 
   var flagPanel = document.getElementById('flagged-list');
   var flagItem = document.getElementById('flagged_' + rowId);
