@@ -463,8 +463,8 @@ function toggleFlag(btn, rowId) {
   var wasFlagged = row.classList.contains('flagged');
 
   if (wasFlagged) {
-    row.classList.remove('flagged');
     btn.classList.remove('flagged');
+    row.classList.remove('flagged');
   } else {
     row.classList.add('flagged');
     btn.classList.add('flagged');
@@ -1074,6 +1074,8 @@ function toggleFlag(btn, rowId) {
         '</span>' +
         '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
           'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
+
+      flagItem.style.cssText = 'display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid transparent; width: 100%;';
 
       flagPanel.appendChild(flagItem);
       document.getElementById('flagged-panel').style.display = 'block';

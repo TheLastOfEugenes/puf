@@ -48,8 +48,9 @@ html, body { height: 100%; font-family: var(--font); font-size: var(--sm); color
 #tree-root, #tree-root li { list-style: none; }
 .tree-label { display: flex; align-items: center; gap: 6px; padding: 3px 0; padding-left: 12px; cursor: pointer; color: var(--muted); font-size: var(--xs); transition: background 100ms, color 100ms; user-select: none; }
 .tree-label:hover { background: var(--surface2); color: var(--text); }
-.tree-label.file { color: var(--faint); }
-.tree-label.file:hover { color: var(--muted); }
+.tree-label.file:not(.tree-file-custom-filtered):not(.tree-file-nmap):not(.tree-file-filtered) {
+  color: var(--faint);
+}.tree-label.file:hover { color: var(--muted); }
 .ticon { width: 12px; height: 12px; flex-shrink: 0; }
 
 /* ── Output panel ── */
@@ -198,31 +199,40 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 #bottom-bar {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 140px;
-  max-height: 140px;
   border-top: 1px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
 }
 
 #flagged-panel {
-  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   background: var(--surface);
+  border-bottom: 1px solid var(--border);
   padding: 12px 16px 10px 16px;
   font-size: var(--xs);
-  box-sizing: border-box;
   border-left: none;
   border-right: none;
-  border-bottom: none;
 }
 
 #flagged-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 4px;
-  align-items: center;
+  align-items: stretch;
+}
+
+#cmd-log {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
 }
 
 #cmd-log-and-panel {
@@ -338,9 +348,4 @@ input[type=number] { -moz-appearance: textfield; }
 .tree-file-raw .tree-label,
 .tree-file-raw .tree-icon {
   color: initial;
-}
-
-.tree-file-custom-filtered.tree-label,
-.tree-file-custom-filtered .tree-icon {
-  color: var(--purple) !important;
 }
