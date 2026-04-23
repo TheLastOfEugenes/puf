@@ -508,7 +508,7 @@ function buildFlaggedItemHtml(row, rowId) {
 }
 
 function toggleFlag(btn, rowId) {
-  var match = rowId.match(/rrow_.+?_\\d+$/);
+  var match = rowId.match(/rrow(\d+)/);
   if (!match) return;
 
   var row = document.getElementById(rowId);
