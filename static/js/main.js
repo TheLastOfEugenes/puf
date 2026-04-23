@@ -514,6 +514,7 @@ function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
   var wasFlagged = flaggedRows.has(rowId);
   var nowFlagged = !wasFlagged;
+  console.log('rowId:', rowId, 'wasFlagged:', wasFlagged, 'row exists?', !!row);
 
   if (nowFlagged) flaggedRows.add(rowId);
   else flaggedRows.delete(rowId);
