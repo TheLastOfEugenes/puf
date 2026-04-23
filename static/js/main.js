@@ -454,8 +454,40 @@ function viewRaw(filePath, name) {
 
 function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
+  var wasFlagged = row.classList.contains('flagged');
+
   row.classList.toggle('flagged');
   btn.classList.toggle('flagged');
+
+  if (wasFlagged) {
+    // unflagged → remove from panel
+    var item = document.getElementById('flagged_' + rowId);
+    if (item) item.remove();
+    if (document.getElementById('flagged-list').children.length === 0) {
+      document.getElementById('flagged-panel').style.display = 'none';
+    }
+  } else {
+    // newly flagged
+    var flagPanel = document.getElementById('flagged-list');
+    var flagItem = document.getElementById('flagged_' + rowId);
+    if (flagItem) return; // already exists
+
+    flagItem = document.createElement('div');
+    flagItem.id = 'flagged_' + rowId;
+
+    var urlCell = row.querySelector('td a') || row.querySelector('td .result-url');
+    var url = urlCell ? urlCell.href : '';
+    var text = urlCell ? urlCell.textContent : 'Unknown';
+
+    flagItem.innerHTML =
+      '<span style="color:var(--blue);cursor:pointer;font-weight:500;" ' +
+        'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' +
+        text +
+      '</span>';
+
+    flagPanel.appendChild(flagItem);
+    document.getElementById('flagged-panel').style.display = 'block';
+  }
 }
 
 // ── Popover ───────────────────────────────────
@@ -545,14 +577,19 @@ function buildTree(data, container) {
       node.files.forEach(function(f) {
         var fileIndent = ((depth + 1) * 14) + 'px';
         var fli = document.createElement('li');
+
+        var fileIcon = getFileIcon(f);
+        var cssClass = getFileCssClass(f);
+
         var flabel = document.createElement('div');
-        flabel.className = 'tree-label file';
+        flabel.className = 'tree-label file ' + cssClass;
         flabel.style.cssText = 'padding-left:calc(' + fileIndent + ' + 14px);display:flex;align-items:center;width:100%';
         flabel.innerHTML =
-          getFileIcon(f) +
+          fileIcon +
           '<span style="flex:1">' + f + '</span>' +
           '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '/' + f + '\',\'' + f + '\')">&#x2715;</button>';
-        flabel.addEventListener('click', function(e) {
+
+          flabel.addEventListener('click', function(e) {
           e.stopPropagation();
           filePopover(e.clientX, e.clientY, f, parts);
         });
@@ -953,7 +990,48 @@ function exportFlagged() {
   });
 }
 
+// In your JS, add this helper
+function getFileCssClass(name) {
+  if (name.endsWith('.xml')) return 'tree-file-nmap';
+  if (name.endsWith('_f.json')) return 'tree-file-filtered';      // auto‑filtered
+  if (name.endsWith('_custom_filtered.json')) return 'tree-file-custom-filtered';
+  return 'tree-file-raw';
+}
+
+function toggleFlag(btn, rowId) {
+  var row = document.getElementById(rowId);
+  var wasFlagged = row.classList.contains('flagged');
+
+  row.classList.toggle('flagged');
+  btn.classList.toggle('flagged');
+
+  if (wasFlagged) {
+    // unflagged → remove from bottom panel
+    var item = document.getElementById('flagged_' + rowId);
+    if (item) item.remove();
+  } else {
+    // newly flagged
+    var flagPanel = document.getElementById('flagged-list');
+    var flagItem = document.createElement('div');
+    flagItem.id = 'flagged_' + rowId;
+
+    var urlCell = row.querySelector('td a'); // or .result-url
+    var url = urlCell ? urlCell.href : 'Unknown';
+    var text = urlCell ? urlCell.textContent : 'Unknown';
+
+    flagItem.innerHTML =
+      '<span style="color:var(--blue);cursor:pointer;" onclick="document.getElementById(\'' + rowId + '\').scrollIntoView();document.getElementById(\'' + rowId + '\').click();">' +
+        text +
+      '</span>';
+
+    flagPanel.appendChild(flagItem);
+    document.getElementById('flagged-panel').style.display = 'block';
+  }
+}
+
 // ── Init ──────────────────────────────────────
+document.getElementById('flagged-panel').style.display = 'none';
+
 fetch('/api/config/icons')
   .then(function(r) { return r.json(); })
   .then(function(data) {
