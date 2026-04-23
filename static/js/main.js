@@ -606,6 +606,25 @@ function buildTree(data, container) {
     var indent = (depth * 14) + 'px';
     var name = parts[parts.length - 1] || path;
 
+    var isExportsRoot = parts.length === 2 && parts[0] === 'puf' && parts[1] === 'exports';
+    if (isExportsRoot) {
+      var li = document.createElement('li');
+      var label = document.createElement('div');
+      label.className = 'tree-label';
+      label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%;';
+      label.innerHTML =
+        '<img src="/static/icons/floppy_disk.svg" class="tree-icon">' +
+        '<span style="flex:1">' + name + '</span>' +
+        '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '\',\'' + name + '\')">&#x2715;</button>';
+      label.addEventListener('click', function(e) {
+        e.stopPropagation();
+        // Exports root is not a target → no folderPopover(target)
+      });
+      li.appendChild(label);
+      container.appendChild(li);
+      return;
+    }
+
     var li = document.createElement('li');
     var label = document.createElement('div');
     label.className = 'tree-label';
@@ -678,6 +697,11 @@ function getFileIcon(name) {
 
 // ── Popovers ──────────────────────────────────
 function folderPopover(x, y, name, parts) {
+
+  if (parts.includes('exports')) {
+    return;
+  }
+  
   var actions = [];
   if (parts.length === 1) return;
   if (parts.length === 2) {
