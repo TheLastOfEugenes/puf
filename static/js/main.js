@@ -525,6 +525,7 @@ function toggleFlag(btn, rowId) {
 
   // Sync row visuals if it exists
   if (row) {
+    console.log(row)
     row.classList.toggle('flagged', nowFlagged);
     // Update button state (assumes btn has class 'flagged' when active)
   }
