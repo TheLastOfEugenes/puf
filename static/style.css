@@ -321,3 +321,8 @@ input[type=number] { -moz-appearance: textfield; }
 .tree-file-raw .tree-icon {
   color: initial;
 }
+
+.tree-file-custom-filtered.tree-label,
+.tree-file-custom-filtered .tree-icon {
+  color: var(--purple) !important;
+}

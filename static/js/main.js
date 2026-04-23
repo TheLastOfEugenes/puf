@@ -367,14 +367,6 @@ function buildRows(results, id, startIdx, isSubs) {
       '</tr>';
   });
 
-  // Footer row: always at the bottom of the table, showing only flagged rows
-  rows += '<tr id="footer_' + id + '" class="flagged-footer" style="background:var(--surface);border-top:1px solid var(--border);">' +
-    '<td colspan="8" style="padding:8px 0;">' +
-      '<div style="font-size:var(--xs);color:var(--muted);margin-bottom:4px;">Flagged in this view</div>' +
-      '<div id="footer-flagged-list_' + id + '" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:var(--xs);"></div>' +
-    '</td>' +
-    '</tr>';
-
   return rows;
 }
 
@@ -468,43 +460,64 @@ function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
   var wasFlagged = row.classList.contains('flagged');
 
-  // Extract tabId from rowId, e.g. rrow_json123_5 → json123
   var match = rowId.match(/rrow_(.*?)_\d+$/);
   if (!match) return;
   var tabId = match[1];
-  var footerListId = 'footer-flagged-list_' + tabId;
-  var footerList = document.getElementById(footerListId);
-  if (!footerList) return;
 
-  var flagItem = document.getElementById('flagged_footer_' + rowId);
+  row.classList.toggle('flagged');
+  btn.classList.toggle('flagged');
+
+  var flagPanel = document.getElementById('flagged-list');
+  var flagItem = document.getElementById('flagged_' + rowId);
 
   if (wasFlagged) {
-    // UNFLAG
-    row.classList.remove('flagged');
-    btn.classList.remove('flagged');
+    // UNFLAG → remove from global panel
     if (flagItem) flagItem.remove();
-  } else {
-    // FFLAG, add to footer
-    row.classList.add('flagged');
-    btn.classList.add('flagged');
-
-    if (!flagItem) {
-      var urlCell = row.querySelector('td a') || row.querySelector('td .result-url');
-      var text = urlCell ? urlCell.textContent : 'Unknown';
-
-      flagItem = document.createElement('div');
-      flagItem.id = 'flagged_footer_' + rowId;
-      flagItem.innerHTML =
-        '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
-          'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' +
-          text +
-        '</span>' +
-        '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
-          'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
-
-      footerList.appendChild(flagItem);
+    if (flagPanel.children.length === 0) {
+      document.getElementById('flagged-panel').style.display = 'none';
     }
+    return;
   }
+
+  // FLAG → add to global panel
+
+  if (flagItem) return; // already exists
+
+  flagItem = document.createElement('div');
+  flagItem.id = 'flagged_' + rowId;
+  flagItem.style.cssText = 'display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid transparent;';
+
+  // get the same fields as in the table
+  var urlCell   = row.querySelector('td a') || row.querySelector('td .result-url');
+  var statusCell = row.querySelector('td:nth-child(3)'); // <td class="status-...">200</td>
+  var lengthCell = row.querySelector('td:nth-child(4)');
+  var wordsCell  = row.querySelector('td:nth-child(5)');
+  var linesCell  = row.querySelector('td:nth-child(6)');
+  var timeCell   = row.querySelector('td:nth-child(7)');
+
+  var url  = urlCell   ? urlCell.textContent : 'Unknown';
+  var status = statusCell ? statusCell.textContent : '';
+  var length = lengthCell ? lengthCell.textContent : '';
+  var words  = wordsCell  ? wordsCell.textContent  : '';
+  var lines  = linesCell  ? linesCell.textContent  : '';
+  var time   = timeCell   ? timeCell.textContent   : '';
+
+  var clickUrl = urlCell ? urlCell.href : '';
+
+  flagItem.innerHTML =
+    '<a href="' + clickUrl + '" target="_blank" style="color:var(--blue);flex:2;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">' +
+      url +
+    '</a>' +
+    '<span style="flex:0.5;color:var(--muted);">' + status + '</span>' +
+    '<span style="flex:0.5;color:var(--muted);">' + length + '</span>' +
+    '<span style="flex:0.5;color:var(--muted);">' + words + '</span>' +
+    '<span style="flex:0.5;color:var(--muted);">' + lines + '</span>' +
+    '<span style="flex:0.5;color:var(--muted);">' + time + '</span>' +
+    '<button style="flex:0;font-size:var(--xs);padding:0 8px;background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
+      'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
+
+  flagPanel.appendChild(flagItem);
+  document.getElementById('flagged-panel').style.display = 'flex';
 }
 
 // ── Popover ───────────────────────────────────
