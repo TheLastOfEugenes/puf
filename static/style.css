@@ -212,26 +212,22 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* absolute to bottom of the panel-output */
 #flagged-panel {
-  position: absolute;
-  bottom: 0;
-  left: 1px;                    /* avoid 0 to not trigger 1‑px glitch */
-  right: 0;
-  z-index: 1000;
   background: var(--surface2);
   border-top: 1px solid var(--border);
   padding: 12px 16px 10px 16px;
   font-size: var(--xs);
   pointer-events: none;
-  box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
+
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 #flagged-panel * {
   pointer-events: auto;
 }
 
-/* ensure .panel-output can contain absolute elements */
 .panel-output {
-  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -245,10 +241,8 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 #flagged-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: stretch;
+  flex: 1;
+  overflow-y: auto;
 }
 
 #cmd-log {
@@ -264,6 +258,18 @@ input[type=number] { -moz-appearance: textfield; }
   flex: 1;
   font-size: var(--xs);
   font-family: 'JetBrains Mono', monospace;
+  /* optional: show more obvious scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--surface);
+}
+
+#cmd-log-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+#cmd-log-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }
 
 #cmd-panel {

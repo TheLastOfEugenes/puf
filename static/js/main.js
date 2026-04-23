@@ -801,6 +801,7 @@ function runCustomFilter() {
     viewJson(u, label);
     refreshTree();
   });
+  list.scrollTop = list.scrollHeight;
 }
 
 // ── Modal ─────────────────────────────────────
