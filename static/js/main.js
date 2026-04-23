@@ -731,6 +731,13 @@ function initCmdPanel() {
     .then(function(data) {
       var list = document.getElementById('cmd-panel-list');
       list.innerHTML = '';
+
+      // ── reset button ──
+      var resetRow = document.createElement('div');
+      resetRow.style.cssText = 'display:flex;justify-content:flex-end;padding:4px 8px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;';
+      resetRow.innerHTML = '<button class="btn-ghost" onclick="resetCommands()" title="Reset all commands to defaults">↺ reset</button>';
+      list.appendChild(resetRow);
+
       ['nmap','fuzz','fuzz_subs'].forEach(function(key) {
         var raw = data[key] || '';
         var preview = raw
@@ -747,6 +754,11 @@ function initCmdPanel() {
         list.appendChild(row);
       });
     });
+}
+
+function resetCommands() {
+  fetch('/api/commands/reset', { method: 'POST' })
+    .then(function() { cmdEdits = {}; initCmdPanel(); });
 }
 
 function editCmd(key) {
