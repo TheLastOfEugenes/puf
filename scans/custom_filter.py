@@ -9,9 +9,6 @@ def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
     input_path = Path(input_path)
     output_path = get_output_path(input_path, custom)
 
-    print("custom filter")
-    print(regex)
-
     with open(input_path) as f:
         data = json.load(f)
 
@@ -48,10 +45,8 @@ def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
             ])
 
         if regex_keep:
-            print("regex filter by")
             results = [r for r in results if pattern.search(get_text(r))]
         else:
-            print("regex filter out")
             results = [r for r in results if not pattern.search(get_text(r))]
             
     output = {**data, 'results': results} if isinstance(data, dict) and 'results' in data else results

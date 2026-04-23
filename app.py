@@ -94,12 +94,16 @@ def get_filter_params():
     def parse_list(val):
         return [int(x.strip()) for x in val.split(',') if x.strip().isdigit()]
     return {
-        'smart_enabled': conf.getboolean('filtering', 'smart_enabled', fallback=True),
-        'smart_limit':   conf.getint('filtering',    'smart_limit',    fallback=1000),
-        'status_codes':  parse_list(conf.get('filtering', 'status_codes', fallback='')),
-        'word_counts':   parse_list(conf.get('filtering', 'word_counts',  fallback='')),
-        'lengths':       parse_list(conf.get('filtering', 'lengths',      fallback='')),
-        'regex':         conf.get('filtering', 'regex', fallback=''),
+        'smart_enabled':   conf.getboolean('filtering', 'smart_enabled',   fallback=True),
+        'smart_limit':     conf.getint(   'filtering', 'smart_limit',     fallback=1000),
+        'status_codes':    parse_list(conf.get('filtering', 'status_codes', fallback='')),
+        'status_codes_keep': conf.getboolean('filtering', 'status_codes_keep', fallback=False),
+        'word_counts':     parse_list(conf.get('filtering', 'word_counts',  fallback='')),
+        'word_counts_keep':  conf.getboolean('filtering', 'word_counts_keep',  fallback=False),
+        'lengths':         parse_list(conf.get('filtering', 'lengths',      fallback='')),
+        'lengths_keep':    conf.getboolean('filtering', 'lengths_keep',    fallback=False),
+        'regex':           conf.get('filtering', 'regex',                   fallback=''),
+        'regex_keep':      conf.getboolean('filtering', 'regex_keep',      fallback=False),
     }
 
 
@@ -218,18 +222,26 @@ def raw_file():
 def custom_filter():
     body = request.get_json()
     try:
+        # Start from config
+        params = get_filter_params()
+
+        # UI override: if user typed anything, use that instead of conf
+        effective = {
+            'smart_enabled':     body.get('smart_enabled',     params['smart_enabled']),
+            'smart_limit':       body.get('smart_limit',       params['smart_limit']),
+            'status_codes':      body.get('status_codes',      params['status_codes']),
+            'status_codes_keep': body.get('status_codes_keep', params['status_codes_keep']),
+            'word_counts':       body.get('word_counts',       params['word_counts']),
+            'word_counts_keep':  body.get('word_counts_keep',  params['word_counts_keep']),
+            'lengths':           body.get('lengths',           params['lengths']),
+            'lengths_keep':      body.get('lengths_keep',      params['lengths_keep']),
+            'regex':             body.get('regex',             params['regex']),
+            'regex_keep':        body.get('regex_keep',        params['regex_keep']),
+        }
+
         output_path = run_custom_filter(
             input_path        = working_path / body['path'],
-            smart_enabled     = body.get('smart_enabled', True),
-            smart_limit       = body.get('smart_limit', 1000),
-            status_codes      = body.get('status_codes', []),
-            status_codes_keep = body.get('status_codes_keep', False),
-            word_counts       = body.get('word_counts', []),
-            word_counts_keep  = body.get('word_counts_keep', False),
-            lengths           = body.get('lengths', []),
-            lengths_keep      = body.get('lengths_keep', False),
-            regex             = body.get('regex', '') or conf.get('filtering', 'regex', fallback=''),
-            regex_keep        = body.get('regex_keep', False),
+            **effective
         )
         return jsonify({'output_path': output_path})
     except Exception as e:
