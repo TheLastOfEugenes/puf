@@ -16,7 +16,7 @@
     <span class="topbar-logo">&#x25C8; puf</span>
     <form class="topbar-form" onsubmit="launchNmapForm(event)">
       <input type="text" id="target-input" placeholder="new target IP or hostname..." autocomplete="off">
-      <button type="submit" class="btn btn-primary">+ nmap</button>
+      <button type="submit" class="btn btn-primary">+ add target</button>
     </form>
     <button class="btn btn-ghost" onclick="refreshTree()">&#x21BA;</button>
   </header>
@@ -46,7 +46,10 @@
         <div id="cmd-log-list"></div>
       </div>
       <div id="cmd-panel">
-        <div class="bar-title">Commands</div>
+        <div class="bar-title" style="display:flex;align-items:center;justify-content:space-between;">
+          Commands
+          <button class="btn-ghost" onclick="resetCommands()" title="Reset all commands to defaults" style="font-size:var(--xs);">↺ reset</button>
+        </div>
         <div id="cmd-panel-list"></div>
       </div>
     </div>
