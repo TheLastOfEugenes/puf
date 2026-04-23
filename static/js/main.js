@@ -930,7 +930,7 @@ function setAutoFilterBtn(enabled) {
 
 function exportFlagged() {
   var rows = document.querySelectorAll('tr.result-row.flagged');
-  if (!rows.length) { alert('No flagged rows.'); return; }
+  if (!rows.length) return;
 
   var results = [];
   rows.forEach(function(row) {
@@ -949,8 +949,7 @@ function exportFlagged() {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({rows: results})
-  }).then(function(r) { return r.json(); })
-    .then(function(data) { alert('Saved to ' + data.output_path); });
+  });
 }
 
 // ── Init ──────────────────────────────────────
