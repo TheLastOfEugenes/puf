@@ -271,6 +271,8 @@ def stream_nmap():
 
 @app.route('/api/scan/ffuf')
 def stream_ffuf():
+    recurse = request.args.get('recurse', 'false') == 'true'
+    depth   = request.args.get('depth', '2')
     target = request.args.get('target')
     type   = request.args.get('type')
     tab_id = request.args.get('tabId')
@@ -307,6 +309,9 @@ def stream_ffuf():
                 wordlist=wordlist,
                 outfile=str(outfile)
             ))
+
+        if recurse:
+            cmd += ['-recursion', '-recursion-depth', depth]
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:

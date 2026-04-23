@@ -114,8 +114,8 @@ function setPaneContent(id, html) {
 }
 
 // ── SSE ───────────────────────────────────────
-function stream(url, tabId, cmd, key) {
-  logCommand(tabId, key || '', cmd || url);
+function stream(url, tabId, cmd, key, resolvedCmd) {
+  logCommand(tabId, key || '', cmd || url, resolvedCmd || cmd);
   const src = new EventSource(url);
   let autoFilter = true;
 
@@ -123,6 +123,15 @@ function stream(url, tabId, cmd, key) {
 
     if (e.data.startsWith('OUTFILE:')) {
       if (tabs[tabId]) tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
+      // update clipboard value in log entry
+      var entry = document.getElementById('cmdlog_' + tabId);
+      if (entry) {
+        var cmdText = entry.querySelector('.cmd-text');
+        if (cmdText) {
+          var updated = cmdText.getAttribute('title').replace('{outfile}', tabs[tabId].outfile);
+          cmdText.setAttribute('title', updated);
+        }
+      }
       return;
     }
 
@@ -239,12 +248,22 @@ function launchFfuf(target, type) {
   var id = createTab(target, type);
   fetch('/api/commands/get').then(function(r) { return r.json(); }).then(function(cmds) {
     var key = type === 'subs' ? 'fuzz_subs' : 'fuzz';
-    var cmd = cmds[key]
+
+    var hostname = new URL(target.startsWith('http') ? target : 'http://' + target).hostname;
+    var resolved = cmds[key]
       .replace('{target}', target)
-      .replace('{hostname}', new URL(target.startsWith('http') ? target : 'http://' + target).hostname)
+      .replace('{hostname}', hostname);
+      // wordlist stays real, outfile will be filled when OUTFILE: arrives
+    var depth = parseInt(document.getElementById('recurse-depth').value) || 2;
+    var display = resolved
       .replace(/-w\s+\S+/g, '-w {wordlist}')
       .replace(/-o\s+\S+/g, '-o {outfile}');
-    stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + '&type=' + type + '&tabId=' + id, id, cmd, type);
+    stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + 
+    '&type=' + type + 
+    '&tabId=' + id +
+    '&recurse=' + _recurseEnabled +
+    '&depth=' + depth, id, display, type, resolved);
+
   });
   closePopover();
 }
@@ -335,7 +354,8 @@ function viewJson(apiUrl, label) {
             '<div class="pane-table" id="jtable_' + tabId + '">' +
             '<table class="rtable"><thead><tr>' +
             '<th>URL</th>' + (isSubs ? '<th>Host</th>' : '') +
-            '<th>Status</th><th>Length</th><th>Words</th><th>Lines</th><th></th>' +
+            '<th>Status</th><th>Length</th><th>Words</th><th>Lines</th><th>Time</th>' +
+            '<th><button class="btn-ghost" style="font-size:var(--xs);" onclick="exportFlagged()" title="Export flagged">⬇</button></th>'
             '</tr></thead>' +
             '<tbody id="jtbody_' + tabId + '">' +
             buildRows(results, tabId, 0, isSubs) +
@@ -375,14 +395,17 @@ function viewJson(apiUrl, label) {
       var display    = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
       var host       = isSubs ? new URL(r.url).hostname : null;
       var clickTarget = isSubs ? 'http://' + display : r.url;
-      rows += '<tr class="result-row" id="rrow_' + id + '_' + idx + '" onclick="resultRowClick(event, \'' + clickTarget + '\')">' +
-        '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
-        (isSubs ? '<td class="muted">' + host + '</td>' : '') +
-        '<td class="status-' + Math.floor(r.status/100) + 'xx">' + r.status + '</td>' +
+      var duration = r.duration ? (r.duration / 1e6).toFixed(0) + 'ms' : '-';
+
+      rows += '<tr ...>' +
+        '<td>...</td>' +     // URL
+        (isSubs ? '<td>...</td>' : '') +
+        '<td class="status-...">...</td>' +  // Status
         '<td class="muted">' + r.length + '</td>' +
         '<td class="muted">' + r.words + '</td>' +
         '<td class="muted">' + r.lines + '</td>' +
-        '<td><button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button></td>' +
+        '<td class="muted">' + duration + '</td>' +   // ← new
+        '<td>...</td>' +     // flag button
         '</tr>';
     });
     return rows;
@@ -596,7 +619,7 @@ function openFilterModal(path, name) {
   document.getElementById('fm-lengths').value = '';
   document.getElementById('filter-modal').style.display = 'flex';
 
-  ['fm-status-mode','fm-words-mode','fm-lengths-mode'].forEach(function(id) {
+  ['fm-status-mode','fm-words-mode','fm-lengths-mode', 'fm-regex-mode'].forEach(function(id) {
     var btn = document.getElementById(id);
     btn.textContent = '✕';
     btn.style.background = '#c0392b';
@@ -642,6 +665,8 @@ function runCustomFilter() {
     word_counts_keep:   document.getElementById('fm-words-mode').textContent === '○',
     lengths:            parseList(document.getElementById('fm-lengths').value),
     lengths_keep:       document.getElementById('fm-lengths-mode').textContent === '○',
+    regex:      document.getElementById('fm-regex').value.trim(),
+    regex_keep: document.getElementById('fm-regex-mode').textContent === '○',
   };
   closeFilterModal();
   var filterId = 'filter_' + Date.now();
@@ -687,7 +712,7 @@ function deletePath(path, label) {
 }
 
 // ── Command Log ───────────────────────────────
-function logCommand(tabId, key, cmd) {
+function logCommand(tabId, key, cmd, resolvedCmd) {
   var list = document.getElementById('cmd-log-list');
   var now  = new Date();
   var time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
@@ -695,11 +720,12 @@ function logCommand(tabId, key, cmd) {
   var entry = document.createElement('div');
   entry.className = 'cmd-log-entry';
   entry.id = 'cmdlog_' + tabId;
+  entry.dataset.resolved = resolvedCmd || cmd;
   entry.innerHTML =
     '<span class="tab-dot running" id="cmdlog_dot_' + tabId + '"></span>' +
     '<span class="cmd-time">' + time + '</span>' +
     (key ? '<span class="cmd-kind">' + key + '</span>' : '') +
-    '<span class="cmd-text" title="' + cmd.replace(/"/g,'&quot;') + '" ' +
+    '<span class="cmd-text" title="' + (resolvedCmd||cmd).replace(/"/g,'&quot;') + '" '+ 
     'onclick="navigator.clipboard.writeText(this.getAttribute(\'title\'));this.style.color=\'var(--blue)\';setTimeout(()=>this.style.color=\'\',800)">' + cmd + '</span>';
 
   var entries = list.querySelectorAll('.cmd-log-entry');
@@ -770,6 +796,15 @@ function initCmdPanel() {
         list.appendChild(row);
       });
     });
+}
+
+var _recurseEnabled = false;
+
+function toggleRecurse() {
+  _recurseEnabled = !_recurseEnabled;
+  var btn = document.getElementById('recurse-btn');
+  btn.textContent = _recurseEnabled ? '⬤ recurse' : '○ recurse';
+  btn.style.color = _recurseEnabled ? 'var(--blue)' : '';
 }
 
 function resetCommands() {
@@ -862,6 +897,30 @@ function setAutoFilterBtn(enabled) {
   if (!btn) return;
   btn.textContent = enabled ? '⬤ filter' : '○ filter';
   btn.style.color  = enabled ? 'var(--blue)' : 'var(--muted)';
+}
+
+function exportFlagged() {
+  var rows = document.querySelectorAll('tr.result-row.flagged');
+  if (!rows.length) { alert('No flagged rows.'); return; }
+
+  var results = [];
+  rows.forEach(function(row) {
+    var cells = row.querySelectorAll('td');
+    results.push({
+      url:    cells[0].textContent.trim(),
+      status: cells[1] ? cells[1].textContent.trim() : '',  // adjust index if subs
+      length: cells[2] ? cells[2].textContent.trim() : '',
+      words:  cells[3] ? cells[3].textContent.trim() : '',
+      lines:  cells[4] ? cells[4].textContent.trim() : '',
+      time:   cells[5] ? cells[5].textContent.trim() : '',
+    });
+  });
+
+  var blob = new Blob([JSON.stringify({ flagged: results }, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'flagged_' + Date.now() + '.json';
+  a.click();
 }
 
 // ── Init ──────────────────────────────────────

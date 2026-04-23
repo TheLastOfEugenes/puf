@@ -48,9 +48,12 @@
       <div id="cmd-panel">
         <div class="bar-title" style="display:flex;align-items:center;justify-content:space-between;">
           Commands
-          <div style="display:flex;gap:6px;">
-            <button id="autofilter-btn" class="btn-ghost" onclick="toggleAutoFilter()" title="Toggle auto-filter"></button>
-            <button class="btn-ghost" onclick="resetCommands()" title="Reset all commands to defaults">↺ reset</button>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button id="recurse-btn" class="btn-ghost" onclick="toggleRecurse()" style="font-size:var(--xs);">○ recurse</button>
+            <input id="recurse-depth" type="number" value="2" min="1" max="10"
+              style="width:36px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--r);padding:2px 4px;font-size:var(--xs);text-align:center;" title="Recursion depth">
+            <button id="autofilter-btn" class="btn-ghost" onclick="toggleAutoFilter()" style="font-size:var(--xs);"></button>
+            <button class="btn-ghost" onclick="resetCommands()" style="font-size:var(--xs);">↺ reset</button>
           </div>
         </div>
         <div id="cmd-panel-list"></div>
@@ -113,6 +116,15 @@
           <input id="fm-lengths" type="text" placeholder=""
             style="flex:1;padding:6px;background:#313244;border:1px solid #555;border-radius:4px;color:#cdd6f4;">
           <button id="fm-lengths-mode" onclick="toggleFilterMode('fm-lengths-mode')"
+            style="width:28px;background:#c0392b;border:none;border-radius:4px;color:#fff;cursor:pointer;font-weight:bold;">✕</button>
+        </div>
+      </label>
+      <label style="display:block; margin-bottom:12px;">
+        Filter by regex <span style="color:#888">(matched against URL)</span>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <input id="fm-regex" type="text" placeholder="e.g. \.php$"
+            style="flex:1;padding:6px;background:#313244;border:1px solid #555;border-radius:4px;color:#cdd6f4;">
+          <button id="fm-regex-mode" onclick="toggleFilterMode('fm-regex-mode')"
             style="width:28px;background:#c0392b;border:none;border-radius:4px;color:#fff;cursor:pointer;font-weight:bold;">✕</button>
         </div>
       </label>
