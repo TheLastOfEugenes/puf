@@ -508,7 +508,7 @@ function buildFlaggedItemHtml(row, rowId) {
 }
 
 function toggleFlag(e, btn, rowId) {
-  if (e) e.stopPropagation();  // 🔥 THIS FIXES IT
+  e.stopPropagation();
 
   var row = document.getElementById(rowId);
   var wasFlagged = flaggedRows.has(rowId);
