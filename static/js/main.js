@@ -506,7 +506,6 @@ function buildFlaggedItemHtml(row, rowId) {
 
 function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
-  if (!row) return;
 
   // Read from global flaggedRows (the truth)
   var wasFlagged = flaggedRows.has(rowId);
@@ -519,7 +518,9 @@ function toggleFlag(btn, rowId) {
   }
 
   // Update row & button visual state
-  row.classList.toggle('flagged', !wasFlagged);
+  if (row){
+    row.classList.toggle('flagged', !wasFlagged);
+  }
   btn.classList.toggle('flagged', !wasFlagged);
 
   // Sync global flagged panel
