@@ -36,16 +36,21 @@ def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
 
     if regex:
         pattern = re_module.compile(regex)
+
         def get_text(r):
-            parts = [
+            return "\n".join([
                 str(r.get('content', '')),
                 str(r.get('url', '')),
                 str(r.get('redirectlocation', '')),
-            ]
-            return "\n".join(parts)
+            ])
 
-        results = [r for r in results if bool(pattern.search(get_text(r))) == regex_keep]
-
+        if regex_keep:
+            print("regex filter by")
+            results = [r for r in results if pattern.search(get_text(r))]
+        else:
+            print("regex filter out")
+            results = [r for r in results if not pattern.search(get_text(r))]
+            
     output = {**data, 'results': results} if isinstance(data, dict) and 'results' in data else results
 
     with open(output_path, 'w') as f:
