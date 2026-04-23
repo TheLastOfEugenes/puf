@@ -458,7 +458,17 @@ function viewRaw(filePath, name) {
 
 function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
+  if (!row) return;
+
   var wasFlagged = row.classList.contains('flagged');
+
+  if (wasFlagged) {
+    row.classList.remove('flagged');
+    btn.classList.remove('flagged');
+  } else {
+    row.classList.add('flagged');
+    btn.classList.add('flagged');
+  }
 
   var match = rowId.match(/rrow_(.*?)_\d+$/);
   if (!match) return;
@@ -584,7 +594,7 @@ function refreshTree() {
 function getFileCssClass(name) {
   if (name.endsWith('.xml')) return 'tree-file-nmap';
   if (name.endsWith('_f.json')) return 'tree-file-filtered';
-  if (name.endsWith('_custom_filtered.json')) return 'tree-file-custom-filtered';
+  if (name.endsWith('_cs.json')) return 'tree-file-custom-filtered';
   return 'tree-file-raw';
 }
 

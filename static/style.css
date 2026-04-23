@@ -201,6 +201,7 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   flex-direction: column;
   min-height: 140px;
+  max-height: 140px;
   border-top: 1px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
@@ -209,10 +210,12 @@ input[type=number] { -moz-appearance: textfield; }
 #flagged-panel {
   flex-shrink: 0;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
+  padding: 12px 16px 10px 16px;
   font-size: var(--xs);
   box-sizing: border-box;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
 }
 
 #flagged-list {
@@ -222,12 +225,10 @@ input[type=number] { -moz-appearance: textfield; }
   align-items: center;
 }
 
-#cmd-log {
-  flex: 1;
+#cmd-log-and-panel {
   display: flex;
-  flex-direction: column;
+  flex: 1;
   border-top: 1px solid var(--border);
-  overflow: hidden;
 }
 
 #cmd-log-list {

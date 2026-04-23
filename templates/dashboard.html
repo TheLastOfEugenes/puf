@@ -41,26 +41,16 @@
       </div>
     </div>
     <div id="bottom-bar">
-
-     <!-- GLOBAL FLAGGED PANEL -->
-      <div id="flagged-panel" style="
-        display:none;
-        margin:0 0 8px 0;
-        background:var(--surface);
-        border:1px solid var(--border);
-        border-radius:var(--r);
-        padding:12px 16px;
-        font-size:var(--xs);
-        box-sizing:border-box;
-      ">
+      <div id="flagged-panel">
         <div id="flagged-title" style="color:var(--muted);font-size:var(--xs);margin-bottom:4px;">Flagged targets (click to scroll to)</div>
-        <div id="flagged-list" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:var(--xs);"></div>
+        <div id="flagged-list"></div>
       </div>
 
-      <div id="cmd-log">
-        <div class="bar-title">Command Log</div>
-        <div id="cmd-log-list"></div>
-      </div>
+      <div id="cmd-log-and-panel">
+        <div id="cmd-log">
+          <div class="bar-title">Command Log</div>
+          <div id="cmd-log-list"></div>
+        </div>
       <div id="cmd-panel">
         <div class="bar-title" style="display:flex;align-items:center;justify-content:space-between;">
           Commands
