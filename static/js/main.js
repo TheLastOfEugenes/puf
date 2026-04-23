@@ -503,7 +503,7 @@ function buildFlaggedItemHtml(row, rowId) {
     '<span style="color:var(--muted);">' + lines + '</span>' +
     '<span style="color:var(--muted);">' + time + '</span>' +
     '<button style="font-size:var(--xs);padding:0 6px;background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
-      'onclick="toggleFlag(event, this, \'rrow_' + id + '_' + idx + '\')">✕</button>'
+      'onclick="toggleFlag(event, this, \'' + rowId + '\')">✕</button>'
   );
 }
 
@@ -545,7 +545,7 @@ function toggleFlag(e, btn, rowId) {
         '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
         'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' + text + '</span>' +
         '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
-        'onclick="toggleFlag(event, this, \'rrow_' + id + '_' + idx + '\')">✕</button>';
+        'onclick="toggleFlag(event, this, \'' + rowId + '\')">✕</button>';
       flagItem.style.cssText = 'display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid transparent; width: 100%;';
       flagPanel.appendChild(flagItem);
     }
