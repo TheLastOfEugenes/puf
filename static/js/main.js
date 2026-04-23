@@ -508,7 +508,6 @@ function buildFlaggedItemHtml(row, rowId) {
 }
 
 function toggleFlag(btn, rowId) {
-  // Validate rowId pattern (rrow_tabId_idx)
   var match = rowId.match(/rrow_.+?_\\d+$/);
   if (!match) return;
 
@@ -516,34 +515,33 @@ function toggleFlag(btn, rowId) {
   var wasFlagged = flaggedRows.has(rowId);
   var nowFlagged = !wasFlagged;
 
-  // Always update central state first
-  if (nowFlagged) {
-    flaggedRows.add(rowId);
-  } else {
-    flaggedRows.delete(rowId);
-  }
+  if (nowFlagged) flaggedRows.add(rowId);
+  else flaggedRows.delete(rowId);
 
-  // Sync row visuals if it exists
   if (row) {
-    console.log(row)
     row.classList.toggle('flagged', nowFlagged);
-    // Update button state (assumes btn has class 'flagged' when active)
+    btn.classList.toggle('flagged', nowFlagged);
   }
 
-  // Sync global flagged panel
   var flagPanel = document.getElementById('flagged-list');
+  var flagItem = document.getElementById('flagged_' + rowId);
+
   if (nowFlagged) {
-    // Add to panel (use your existing flagItem creation logic here)
-    var flagItem = document.createElement('div');
-    flagItem.innerHTML = 'Your URL/text for ' + rowId + 
-      '<button style="background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
-      'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
-    flagPanel.appendChild(flagItem.firstChild);  // Append the inner element
-    document.getElementById('flagged-panel').style.display = 'flex';
+    if (!flagItem) {
+      flagItem = document.createElement('div');
+      flagItem.id = 'flagged_' + rowId;
+      var text = row ? (row.querySelector('td a')?.textContent || row.querySelector('td .result-url')?.textContent || rowId) : rowId;
+      flagItem.innerHTML = 
+        '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
+        'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' + text + '</span>' +
+        '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
+        'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
+      flagItem.style.cssText = 'display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid transparent; width: 100%;';
+      flagPanel.appendChild(flagItem);
+    }
+    document.getElementById('flagged-panel').style.display = 'block';
   } else {
-    // Remove from panel
-    var items = flagPanel.querySelectorAll('[onclick*="' + rowId + '"]');
-    items.forEach(function(item) { item.parentNode.remove(); });
+    if (flagItem) flagItem.remove();
     if (flagPanel.children.length === 0) {
       document.getElementById('flagged-panel').style.display = 'none';
     }
