@@ -587,7 +587,10 @@ function portRowClick(e, hostname, port) {
 }
 
 function resultRowClick(e, url) {
-  if (e.target.tagName === 'A' || e.target.classList.contains('flag-btn')) return;
+  if (e.target.tagName === 'A' || e.target.closest('a') || e.target.classList.contains('flag-btn')) {
+    e.stopPropagation();
+    return;
+  }
   e.stopPropagation();
   showPopover(e.clientX, e.clientY, url, [
     { label: '▶ web scan (http)',  fn: function() { webScan(url.replace(/^https/, 'http'),  new URL(url).hostname); }, primary: true },
