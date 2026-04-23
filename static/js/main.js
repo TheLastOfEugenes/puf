@@ -425,15 +425,17 @@ function viewJson(apiUrl, label) {
           setPaneContent(tabId, html);
 
           // After the table is in the DOM, re‑apply existing flags
-          results.forEach(function(r, i) {
-            var idx = i;
-            var rowId = 'rrow_' + tabId + '_' + idx;
-            if (flaggedRows.has(rowId)) {
-              var row = document.getElementById(rowId);
-              var btn = row ? row.querySelector('.flag-btn') : null;
-              if (row) row.classList.add('flagged');
-              if (btn) btn.classList.add('flagged');
-            }
+          queueMicrotask(() => {
+            results.forEach(function(r, i) {
+              var idx = i;
+              var rowId = 'rrow_' + tabId + '_' + idx;
+              if (flaggedRows.has(rowId)) {
+                var row = document.getElementById(rowId);
+                var btn = row ? row.querySelector('.flag-btn') : null;
+                if (row) row.classList.add('flagged');
+                if (btn) btn.classList.add('flagged');
+              }
+            });
           });
 
           var pane = document.getElementById('jtable_' + tabId);
@@ -506,10 +508,10 @@ function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
   if (!row) return;
 
-  // Read current state from the global set
+  // Read from global flaggedRows (the truth)
   var wasFlagged = flaggedRows.has(rowId);
 
-  // Update global state
+  // Flip global state
   if (wasFlagged) {
     flaggedRows.delete(rowId);
   } else {
@@ -517,17 +519,15 @@ function toggleFlag(btn, rowId) {
   }
 
   // Update row & button visual state
-  if (row) {
-    row.classList.toggle('flagged', !wasFlagged);
-  }
+  row.classList.toggle('flagged', !wasFlagged);
   btn.classList.toggle('flagged', !wasFlagged);
 
-  // Now sync the global flagged panel
+  // Sync global flagged panel
   var flagPanel = document.getElementById('flagged-list');
   var flagItem = document.getElementById('flagged_' + rowId);
 
   if (wasFlagged) {
-    // UNFLAG: remove from global UI
+    // UNFLAG: remove from panel
     if (flagItem) flagItem.remove();
     if (flagPanel.children.length === 0) {
       document.getElementById('flagged-panel').style.display = 'none';
@@ -535,14 +535,14 @@ function toggleFlag(btn, rowId) {
     return;
   }
 
-  // FLAG: add to global UI
+  // FLAG: add to panel
   if (flagItem) return; // already exists
 
   flagItem = document.createElement('div');
   flagItem.id = 'flagged_' + rowId;
   flagItem.style.cssText = 'display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid transparent;';
 
-  // get the same fields as in the table
+  // Get fields from the row
   var urlCell   = row.querySelector('td a') || row.querySelector('td .result-url');
   var statusCell = row.querySelector('td:nth-child(3)');
   var lengthCell = row.querySelector('td:nth-child(4)');
