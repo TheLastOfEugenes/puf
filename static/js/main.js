@@ -701,7 +701,7 @@ function folderPopover(x, y, name, parts) {
   if (parts.includes('exports')) {
     return;
   }
-  
+
   var actions = [];
   if (parts.length === 1) return;
   if (parts.length === 2) {
@@ -728,6 +728,7 @@ function filePopover(x, y, name, parts) {
   var filePath = 'puf/' + parts.slice(1).join('/') + '/' + name;
   if (name.endsWith('.xml')) {
     actions.push({ label: 'View nmap results', fn: function() { viewNmap(parts[1]); } });
+    actions.push({ label: 'View raw file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
   } else if (name.endsWith('.json')) {
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
     actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
