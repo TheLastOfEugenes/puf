@@ -122,14 +122,17 @@ function stream(url, tabId, cmd, key, resolvedCmd) {
   src.onmessage = function(e) {
 
     if (e.data.startsWith('OUTFILE:')) {
-      if (tabs[tabId]) tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
-      // update clipboard value in log entry
+      if (tabs[tabId]) {
+        tabs[tabId].outfile = e.data.split(':').slice(1).join(':');
+      }
       var entry = document.getElementById('cmdlog_' + tabId);
-      if (entry) {
+      if (entry && tabs[tabId]) {
         var cmdText = entry.querySelector('.cmd-text');
         if (cmdText) {
-          var updated = cmdText.getAttribute('title').replace('{outfile}', tabs[tabId].outfile);
+          var relOut = 'puf/' + tabs[tabId].outfile;
+          var updated = cmdText.getAttribute('title').replace('{outfile}', relOut);
           cmdText.setAttribute('title', updated);
+          entry.dataset.resolved = updated;
         }
       }
       return;
@@ -248,22 +251,27 @@ function launchFfuf(target, type) {
   var id = createTab(target, type);
   fetch('/api/commands/get').then(function(r) { return r.json(); }).then(function(cmds) {
     var key = type === 'subs' ? 'fuzz_subs' : 'fuzz';
-
     var hostname = new URL(target.startsWith('http') ? target : 'http://' + target).hostname;
     var resolved = cmds[key]
       .replace('{target}', target)
       .replace('{hostname}', hostname);
-      // wordlist stays real, outfile will be filled when OUTFILE: arrives
-    var depth = parseInt(document.getElementById('recurse-depth').value) || 2;
+
     var display = resolved
       .replace(/-w\s+\S+/g, '-w {wordlist}')
       .replace(/-o\s+\S+/g, '-o {outfile}');
-    stream('/api/scan/ffuf?target=' + encodeURIComponent(target) + 
-    '&type=' + type + 
-    '&tabId=' + id +
-    '&recurse=' + _recurseEnabled +
-    '&depth=' + depth, id, display, type, resolved);
 
+    var depth = parseInt(document.getElementById('recurse-depth').value) || 2;
+    stream(
+      '/api/scan/ffuf?target=' + encodeURIComponent(target) +
+      '&type=' + type +
+      '&tabId=' + id +
+      '&recurse=' + _recurseEnabled +
+      '&depth=' + depth,
+      id,
+      display,
+      type,
+      resolved
+    );
   });
   closePopover();
 }
@@ -315,7 +323,6 @@ function viewNmap(target) {
 
 function viewJson(apiUrl, label) {
   var baseUrl = apiUrl.split('&offset=')[0].split('?offset=')[0];
-  // strip any existing offset/limit params
   baseUrl = baseUrl.replace(/[&?]offset=\d+/, '').replace(/[&?]limit=\d+/, '');
   var separator = baseUrl.includes('?') ? '&' : '?';
 
@@ -338,7 +345,6 @@ function viewJson(apiUrl, label) {
         total = data.total !== undefined ? data.total : results.length;
 
         if (offset === 0) {
-          // first page — build the tab and table
           tabId = createTab(label, 'results');
           setDot(tabId, 'done');
 
@@ -355,7 +361,7 @@ function viewJson(apiUrl, label) {
             '<table class="rtable"><thead><tr>' +
             '<th>URL</th>' + (isSubs ? '<th>Host</th>' : '') +
             '<th>Status</th><th>Length</th><th>Words</th><th>Lines</th><th>Time</th>' +
-            '<th><button class="btn-ghost" style="font-size:var(--xs);" onclick="exportFlagged()" title="Export flagged">⬇</button></th>'
+            '<th><button class="btn-ghost" style="font-size:var(--xs);" onclick="exportFlagged()" title="Export flagged">⬇</button></th>' +
             '</tr></thead>' +
             '<tbody id="jtbody_' + tabId + '">' +
             buildRows(results, tabId, 0, isSubs) +
@@ -367,7 +373,6 @@ function viewJson(apiUrl, label) {
 
           setPaneContent(tabId, html);
 
-          // attach scroll listener
           var pane = document.getElementById('jtable_' + tabId);
           pane.addEventListener('scroll', function() {
             if (pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 100) {
@@ -376,7 +381,6 @@ function viewJson(apiUrl, label) {
           });
 
         } else {
-          // subsequent pages — append rows
           var tbody = document.getElementById('jtbody_' + tabId);
           if (tbody) tbody.innerHTML += buildRows(results, tabId, offset, isSubs);
           var loader = document.getElementById('jloader_' + tabId);
@@ -392,20 +396,23 @@ function viewJson(apiUrl, label) {
     var rows = '';
     results.forEach(function(r, i) {
       var idx = startIdx + i;
-      var display    = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
-      var host       = isSubs ? new URL(r.url).hostname : null;
+      var display = isSubs ? r.input.FUZZ + '.' + new URL(r.url).hostname : r.url;
+      var host = isSubs ? new URL(r.url).hostname : '';
       var clickTarget = isSubs ? 'http://' + display : r.url;
       var duration = r.duration ? (r.duration / 1e6).toFixed(0) + 'ms' : '-';
+      var statusClass = 'status-' + Math.floor(r.status / 100) + 'xx';
 
-      rows += '<tr ...>' +
-        '<td>...</td>' +     // URL
-        (isSubs ? '<td>...</td>' : '') +
-        '<td class="status-...">...</td>' +  // Status
+      rows += '<tr class="result-row" id="rrow_' + id + '_' + idx + '" onclick="resultRowClick(event, \'' + clickTarget + '\')">' +
+        '<td><a href="' + (isSubs ? 'http://' + display : r.url) + '" target="_blank" class="result-url">' + display + '</a></td>' +
+        (isSubs ? '<td class="muted">' + host + '</td>' : '') +
+        '<td class="' + statusClass + '">' + r.status + '</td>' +
         '<td class="muted">' + r.length + '</td>' +
         '<td class="muted">' + r.words + '</td>' +
         '<td class="muted">' + r.lines + '</td>' +
-        '<td class="muted">' + duration + '</td>' +   // ← new
-        '<td>...</td>' +     // flag button
+        '<td class="muted">' + duration + '</td>' +
+        '<td style="display:flex;gap:4px;align-items:center;">' +
+          '<button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button>' +
+        '</td>' +
         '</tr>';
     });
     return rows;
@@ -414,7 +421,6 @@ function viewJson(apiUrl, label) {
   fetchPage(null);
   closePopover();
 }
-
 function viewRaw(filePath, name) {
   fetch('/api/results/raw?path=' + encodeURIComponent(filePath))
     .then(function(r) { return r.text(); })
@@ -714,7 +720,7 @@ function deletePath(path, label) {
 // ── Command Log ───────────────────────────────
 function logCommand(tabId, key, cmd, resolvedCmd) {
   var list = document.getElementById('cmd-log-list');
-  var now  = new Date();
+  var now = new Date();
   var time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
 
   var entry = document.createElement('div');
@@ -725,8 +731,10 @@ function logCommand(tabId, key, cmd, resolvedCmd) {
     '<span class="tab-dot running" id="cmdlog_dot_' + tabId + '"></span>' +
     '<span class="cmd-time">' + time + '</span>' +
     (key ? '<span class="cmd-kind">' + key + '</span>' : '') +
-    '<span class="cmd-text" title="' + (resolvedCmd||cmd).replace(/"/g,'&quot;') + '" '+ 
-    'onclick="navigator.clipboard.writeText(this.getAttribute(\'title\'));this.style.color=\'var(--blue)\';setTimeout(()=>this.style.color=\'\',800)">' + cmd + '</span>';
+    '<span class="cmd-text" title="' + (resolvedCmd || cmd).replace(/"/g,'&quot;') + '" ' +
+    'onclick="navigator.clipboard.writeText(this.getAttribute(\'title\'));this.style.color=\'var(--blue)\';setTimeout(()=>this.style.color=\'\',800)">' +
+    cmd +
+    '</span>';
 
   var entries = list.querySelectorAll('.cmd-log-entry');
   var firstRunning = null;

@@ -310,9 +310,10 @@ def stream_ffuf():
                 outfile=str(outfile)
             ))
 
-        if recurse:
-            cmd += ['-recursion', '-recursion-depth', depth]
+        if recurse and type in ('files', 'dirs'):
+            cmd += ['-recursion', '-recursion-depth', str(depth)]
 
+        print('FFUF CMD:', cmd, flush=True)
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, text=True)
         if tab_id:
             processes[tab_id] = process

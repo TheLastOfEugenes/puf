@@ -33,11 +33,18 @@ def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
             (not status_codes or (r.get('status') in status_codes) == status_codes_keep) and
             (not word_counts  or (int(r.get('words',  -1)) in [int(x) for x in word_counts])  == word_counts_keep) and
             (not lengths      or (int(r.get('length', -1)) in [int(x) for x in lengths])       == lengths_keep)]
-    
+
     if regex:
         pattern = re_module.compile(regex)
-        results = [r for r in results if
-            bool(pattern.search(r.get('url', ''))) == regex_keep]
+        def get_text(r):
+            parts = [
+                str(r.get('content', '')),
+                str(r.get('url', '')),
+                str(r.get('redirectlocation', '')),
+            ]
+            return "\n".join(parts)
+
+        results = [r for r in results if bool(pattern.search(get_text(r))) == regex_keep]
 
     output = {**data, 'results': results} if isinstance(data, dict) and 'results' in data else results
 
