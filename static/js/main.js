@@ -6,6 +6,8 @@ var ICONS = {};
 var _filterTargetPath = null;
 var _filterTargetName = null;
 
+var flaggedRows = new Set();
+
 // ── Tabs ──────────────────────────────────────
 function createTab(label, kind) {
   const id = 'tab' + (++counter);
@@ -373,8 +375,8 @@ function buildRows(results, id, startIdx, isSubs) {
 function viewJson(apiUrl, label) {
   var baseUrl = apiUrl.split('&offset=')[0].split('?offset=')[0];
   baseUrl = baseUrl.replace(/[&?]offset=\d+/, '').replace(/[&?]limit=\d+/, '');
-  var separator = baseUrl.includes('?') ? '&' : '?';
 
+  var separator = baseUrl.includes('?') ? '&' : '?';
   var offset = 0;
   var limit  = 500;
   var total  = null;
@@ -410,7 +412,7 @@ function viewJson(apiUrl, label) {
             '<table class="rtable"><thead><tr>' +
             '<th>URL</th>' + (isSubs ? '<th>Host</th>' : '') +
             '<th>Status</th><th>Length</th><th>Words</th><th>Lines</th><th>Time</th>' +
-            '<th><button class="btn-ghost" style="font-size:var(--xs);" onclick="exportFlagged()" title="Export flagged">⬇</button></th>' +
+            '<th>Flag</th>' +
             '</tr></thead>' +
             '<tbody id="jtbody_' + tabId + '">' +
             buildRows(results, tabId, 0, isSubs) +
@@ -422,6 +424,18 @@ function viewJson(apiUrl, label) {
 
           setPaneContent(tabId, html);
 
+          // After the table is in the DOM, re‑apply existing flags
+          results.forEach(function(r, i) {
+            var idx = i;
+            var rowId = 'rrow_' + tabId + '_' + idx;
+            if (flaggedRows.has(rowId)) {
+              var row = document.getElementById(rowId);
+              var btn = row ? row.querySelector('.flag-btn') : null;
+              if (row) row.classList.add('flagged');
+              if (btn) btn.classList.add('flagged');
+            }
+          });
+
           var pane = document.getElementById('jtable_' + tabId);
           pane.addEventListener('scroll', function() {
             if (pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 100) {
@@ -432,6 +446,7 @@ function viewJson(apiUrl, label) {
         } else {
           var tbody = document.getElementById('jtbody_' + tabId);
           if (tbody) tbody.innerHTML += buildRows(results, tabId, offset, isSubs);
+
           var loader = document.getElementById('jloader_' + tabId);
           if (loader) loader.textContent = (offset + results.length < total ? '' : 'All ' + total + ' results loaded');
         }
@@ -456,32 +471,63 @@ function viewRaw(filePath, name) {
     });
 }
 
+function buildFlaggedItemHtml(row, rowId) {
+  var urlCell   = row.querySelector('td a') || row.querySelector('td .result-url');
+  var statusCell = row.querySelector('td:nth-child(3)');
+  var lengthCell = row.querySelector('td:nth-child(4)');
+  var wordsCell  = row.querySelector('td:nth-child(5)');
+  var linesCell  = row.querySelector('td:nth-child(6)');
+  var timeCell   = row.querySelector('td:nth-child(7)');
+
+  var url   = urlCell   ? urlCell.textContent : 'Unknown';
+  var status = statusCell ? statusCell.textContent : '';
+  var length = lengthCell ? lengthCell.textContent : '';
+  var words  = wordsCell  ? wordsCell.textContent  : '';
+  var lines  = linesCell  ? linesCell.textContent  : '';
+  var time   = timeCell   ? timeCell.textContent   : '';
+
+  var clickUrl = urlCell ? urlCell.href : '';
+
+  return (
+    '<a href="' + clickUrl + '" target="_blank" style="color:var(--blue);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;">' +
+      url +
+    '</a>' +
+    '<span style="color:var(--muted);">' + status + '</span>' +
+    '<span style="color:var(--muted);">' + length + '</span>' +
+    '<span style="color:var(--muted);">' + words + '</span>' +
+    '<span style="color:var(--muted);">' + lines + '</span>' +
+    '<span style="color:var(--muted);">' + time + '</span>' +
+    '<button style="font-size:var(--xs);padding:0 6px;background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
+      'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>'
+  );
+}
+
 function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
   if (!row) return;
 
-  var wasFlagged = row.classList.contains('flagged');
+  // Read current state from the global set
+  var wasFlagged = flaggedRows.has(rowId);
 
+  // Update global state
   if (wasFlagged) {
-    btn.classList.remove('flagged');
-    row.classList.remove('flagged');
+    flaggedRows.delete(rowId);
   } else {
-    row.classList.add('flagged');
-    btn.classList.add('flagged');
+    flaggedRows.add(rowId);
   }
 
-  var match = rowId.match(/rrow_(.*?)_\d+$/);
-  if (!match) return;
-  var tabId = match[1];
+  // Update row & button visual state
+  if (row) {
+    row.classList.toggle('flagged', !wasFlagged);
+  }
+  btn.classList.toggle('flagged', !wasFlagged);
 
-  row.classList.toggle('flagged');
-  btn.classList.toggle('flagged');
-
+  // Now sync the global flagged panel
   var flagPanel = document.getElementById('flagged-list');
   var flagItem = document.getElementById('flagged_' + rowId);
 
   if (wasFlagged) {
-    // UNFLAG → remove from global panel
+    // UNFLAG: remove from global UI
     if (flagItem) flagItem.remove();
     if (flagPanel.children.length === 0) {
       document.getElementById('flagged-panel').style.display = 'none';
@@ -489,8 +535,7 @@ function toggleFlag(btn, rowId) {
     return;
   }
 
-  // FLAG → add to global panel
-
+  // FLAG: add to global UI
   if (flagItem) return; // already exists
 
   flagItem = document.createElement('div');
@@ -499,13 +544,13 @@ function toggleFlag(btn, rowId) {
 
   // get the same fields as in the table
   var urlCell   = row.querySelector('td a') || row.querySelector('td .result-url');
-  var statusCell = row.querySelector('td:nth-child(3)'); // <td class="status-...">200</td>
+  var statusCell = row.querySelector('td:nth-child(3)');
   var lengthCell = row.querySelector('td:nth-child(4)');
   var wordsCell  = row.querySelector('td:nth-child(5)');
   var linesCell  = row.querySelector('td:nth-child(6)');
   var timeCell   = row.querySelector('td:nth-child(7)');
 
-  var url  = urlCell   ? urlCell.textContent : 'Unknown';
+  var url    = urlCell   ? urlCell.textContent : 'Unknown';
   var status = statusCell ? statusCell.textContent : '';
   var length = lengthCell ? lengthCell.textContent : '';
   var words  = wordsCell  ? wordsCell.textContent  : '';
