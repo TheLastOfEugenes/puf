@@ -429,8 +429,7 @@ function viewJson(apiUrl, label) {
             results.forEach(function(r, i) {
               var idx = i;
               var rowId = 'rrow_' + tabId + '_' + idx;
-              var url = r.url;
-              if (flaggedRows.has(url)) {
+              if (flaggedRows.has(rowId)) {
                 var row = document.getElementById(rowId);
                 if (row) {
                   row.classList.add('flagged');
@@ -504,7 +503,7 @@ function buildFlaggedItemHtml(row, rowId) {
     '<span style="color:var(--muted);">' + lines + '</span>' +
     '<span style="color:var(--muted);">' + time + '</span>' +
     '<button style="font-size:var(--xs);padding:0 6px;background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
-      'onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')">x</button>'
+      'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>'
   );
 }
 
@@ -513,26 +512,16 @@ function toggleFlag(btn, rowId) {
   if (!match) return;
   
   var row = document.getElementById(rowId);
-  
-  var urlEl = row?.querySelector('a');
-  var key = urlEl ? urlEl.href : rowId;
-
-  var wasFlagged = flaggedRows.has(key);
+  var wasFlagged = flaggedRows.has(rowId);
   var nowFlagged = !wasFlagged;
-
-  if (nowFlagged) flaggedRows.add(key);
-  else flaggedRows.delete(key);
 
   if (nowFlagged) flaggedRows.add(rowId);
   else flaggedRows.delete(rowId);
 
   if (row) {
-  row.classList.toggle('flagged', nowFlagged);
-
-  // find the real button inside the row
-  var realBtn = row.querySelector('.flag-btn');
-  if (realBtn) realBtn.classList.toggle('flagged', nowFlagged);
-}
+    row.classList.toggle('flagged', nowFlagged);
+    btn.classList.toggle('flagged', nowFlagged);
+  }
 
   var flagPanel = document.getElementById('flagged-list');
   var flagItem = document.getElementById('flagged_' + rowId);
@@ -546,7 +535,7 @@ function toggleFlag(btn, rowId) {
         '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
         'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' + text + '</span>' +
         '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
-        'onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')">x</button>';
+        'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
       flagItem.style.cssText = 'display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid transparent; width: 100%;';
       flagPanel.appendChild(flagItem);
     }
