@@ -29,9 +29,11 @@
   </aside>
 
   <main class="panel-output">
+
     <div class="tabbar" id="tabbar">
       <span class="tabbar-empty" id="tabbar-empty">No scans yet</span>
     </div>
+    
     <div class="output-area" id="output-area">
       <div class="empty-hint" id="empty-hint">
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -40,11 +42,13 @@
         <p>Launch a scan or click a file in the tree</p>
       </div>
     </div>
+    
+    <div id="flagged-panel">
+      <div id="flagged-title" style="color:var(--muted);font-size:var(--xs);margin-bottom:4px;">Flagged targets (click to scroll to)</div>
+      <div id="flagged-list"></div>
+    </div>
+    
     <div id="bottom-bar">
-      <div id="flagged-panel">
-        <div id="flagged-title" style="color:var(--muted);font-size:var(--xs);margin-bottom:4px;">Flagged targets (click to scroll to)</div>
-        <div id="flagged-list"></div>
-      </div>
 
       <div id="cmd-log-and-panel">
         <div id="cmd-log">
