@@ -529,7 +529,6 @@ function toggleFlag(btn, rowId) {
     // Update button state (assumes btn has class 'flagged' when active)
     btn.classList.toggle('flagged', nowFlagged);
   }
-  btn.classList.toggle('flagged', nowFlagged);
 
   // Sync global flagged panel
   var flagPanel = document.getElementById('flagged-list');
@@ -543,7 +542,7 @@ function toggleFlag(btn, rowId) {
     document.getElementById('flagged-panel').style.display = 'flex';
   } else {
     // Remove from panel
-    var items = flagPanel.querySelectorAll('[onclick*="\'" + rowId + "\'"]');
+    var items = flagPanel.querySelectorAll('[onclick*="' + rowId + '"]');
     items.forEach(function(item) { item.parentNode.remove(); });
     if (flagPanel.children.length === 0) {
       document.getElementById('flagged-panel').style.display = 'none';
