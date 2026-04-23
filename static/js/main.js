@@ -1087,48 +1087,6 @@ function exportFlagged() {
   });
 }
 
-function toggleFlag(btn, rowId) {
-  var row = document.getElementById(rowId);
-  var wasFlagged = row.classList.contains('flagged');
-
-  row.classList.toggle('flagged');
-  btn.classList.toggle('flagged');
-  
-
-  var flagPanel = document.getElementById('flagged-list');
-  var flagItem = document.getElementById('flagged_' + rowId);
-
-  if (wasFlagged) {
-    // UNFLAG: remove from row and from global panel
-    if (flagItem) flagItem.remove();
-    if (flagPanel.children.length === 0) {
-      document.getElementById('flagged-panel').style.display = 'none';
-    }
-  } else {
-    // FLAG: add to row and to global panel
-    if (!flagItem) {
-      flagItem = document.createElement('div');
-      flagItem.id = 'flagged_' + rowId;
-
-      var urlCell = row.querySelector('td a') || row.querySelector('td .result-url');
-      var text = urlCell ? urlCell.textContent : 'Unknown';
-
-      flagItem.innerHTML =
-        '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
-          'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' +
-          text +
-        '</span>' +
-        '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
-          'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
-
-      flagItem.style.cssText = 'display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid transparent; width: 100%;';
-
-      flagPanel.appendChild(flagItem);
-      document.getElementById('flagged-panel').style.display = 'block';
-    }
-  }
-}
-
 // ── Init ──────────────────────────────────────
 document.getElementById('flagged-panel').style.display = 'none';
 
