@@ -330,7 +330,7 @@ function viewNmap(target) {
             '<td class="status-' + (p.state === 'open' ? '2xx' : 'muted') + '">' + p.state + '</td>' +
             '<td>' + p.service + '</td>' +
             '<td class="muted">' + (p.version || '') + '</td>' +
-            '<td><button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button></td>' +
+            '<td><button class="flag-btn" onclick="toggleFlag(event, this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button></td>' +
             '</tr>';
           idx++;
         });
@@ -364,7 +364,7 @@ function buildRows(results, id, startIdx, isSubs) {
       '<td class="muted">' + r.lines + '</td>' +
       '<td class="muted">' + duration + '</td>' +
       '<td style="display:flex;gap:4px;align-items:center;">' +
-        '<button class="flag-btn" onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button>' +
+        '<button class="flag-btn" onclick="toggleFlag(event, this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button>' +
       '</td>' +
       '</tr>';
   });
@@ -503,12 +503,20 @@ function buildFlaggedItemHtml(row, rowId) {
     '<span style="color:var(--muted);">' + lines + '</span>' +
     '<span style="color:var(--muted);">' + time + '</span>' +
     '<button style="font-size:var(--xs);padding:0 6px;background:none;border:none;cursor:pointer;color:var(--red);font-weight:bold;" ' +
-      'onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')">✕</button>'
+      'onclick="toggleFlag(event, this, \'rrow_' + id + '_' + idx + '\')">✕</button>'
   );
 }
 
 function toggleFlag(e, btn, rowId) {
-  e.stopPropagation();
+  if (e && typeof e.stopPropagation === 'function') {
+    e.stopPropagation();
+  }
+
+  // fallback: if called without event (old calls)
+  if (!rowId) {
+    rowId = btn;
+    btn = e;
+  }
 
   var row = document.getElementById(rowId);
   var wasFlagged = flaggedRows.has(rowId);
@@ -519,7 +527,9 @@ function toggleFlag(e, btn, rowId) {
 
   if (row) {
     row.classList.toggle('flagged', nowFlagged);
-    btn.classList.toggle('flagged', nowFlagged);
+
+    var realBtn = row.querySelector('.flag-btn');
+    if (realBtn) realBtn.classList.toggle('flagged', nowFlagged);
   }
 
 
@@ -535,7 +545,7 @@ function toggleFlag(e, btn, rowId) {
         '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
         'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' + text + '</span>' +
         '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
-        'onclick="toggleFlag(this, \'rrow_' + id + '_' + idx + '\')">✕</button>';
+        'onclick="toggleFlag(event, this, \'rrow_' + id + '_' + idx + '\')">✕</button>';
       flagItem.style.cssText = 'display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid transparent; width: 100%;';
       flagPanel.appendChild(flagItem);
     }
