@@ -140,7 +140,7 @@ function stream(url, tabId, cmd, key) {
       return;
     }
 
-        if (e.data === '[DONE]') {
+    if (e.data === '[DONE]') {
       updateLogDot(tabId, 'done');
       src.close();
       refreshTree();
@@ -230,7 +230,7 @@ function launchNmap(target) {
   var id = createTab(clean, 'nmap');
   fetch('/api/commands/get').then(function(r) { return r.json(); }).then(function(cmds) {
     var cmd = cmds['nmap'].replace('{target}', clean);
-    stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id, cmd);
+    stream('/api/scan/nmap?target=' + encodeURIComponent(clean) + '&tabId=' + id, id, cmd, 'nmap');
   });
   closePopover();
 }
@@ -623,7 +623,8 @@ function runCustomFilter() {
   };
   closeFilterModal();
   var filterId = 'filter_' + Date.now();
-  logCommand(filterId, 'filter', '(' + _filterTargetName + ')');  fetch('/api/filter', {
+  logCommand(filterId, 'filter', 'custom_filter(' + _filterTargetName + ')');
+  fetch('/api/filter', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)

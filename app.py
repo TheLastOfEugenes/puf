@@ -281,9 +281,25 @@ def stream_ffuf():
                 yield f"data: PROGRESS:{pct}\n\n"
             else:
                 yield f"data: {line.rstrip()}\n\n"
+        
         process.stdout.close()
         process.wait()
         processes.pop(tab_id, None)
+
+        if get_auto_filter():
+            try:
+                run_custom_filter(
+                    input_path=outfile,
+                    smart_enabled=True,
+                    smart_limit=1000,
+                    status_codes=[],
+                    word_counts=[],
+                    lengths=[],
+                    custom=False
+                )
+            except Exception as e:
+                yield f"data: [filter error: {e}]\n\n"
+
         yield f"data: AUTO_FILTER:{'true' if get_auto_filter() else 'false'}\n\n"
         yield "data: [DONE]\n\n"
 

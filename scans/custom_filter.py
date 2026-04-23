@@ -4,10 +4,9 @@ from collections import Counter
 from utils import get_output_path
 
 def run_custom_filter(input_path, smart_enabled=True, smart_limit=1000,
-                      status_codes=[], word_counts=[], lengths=[]):
+                      status_codes=[], word_counts=[], lengths=[], custom=True):
     input_path = Path(input_path)
-    output_path = input_path.with_name(input_path.stem + '_custom_filtered.json')
-    output_path = get_output_path(input_path, custom=True)
+    output_path = get_output_path(input_path, custom)
 
     with open(input_path) as f:
         data = json.load(f)
