@@ -1019,43 +1019,37 @@ function toggleFlag(btn, rowId) {
   var row = document.getElementById(rowId);
   var wasFlagged = row.classList.contains('flagged');
 
-  var match = rowId.match(/rrow_(.*?)_(\d+)$/);
-  if (!match) return;  // not a ffuf result row
+  row.classList.toggle('flagged');
+  btn.classList.toggle('flagged');
 
-  var tabId = match[1];  // e.g. 'json123'
-  var footerListId = 'footer-flagged-list_' + tabId;
-  var footerList = document.getElementById(footerListId);
-
-  if (!footerList) return;
-
-  var flagItem = document.getElementById('flagged_footer_' + rowId);
+  var flagPanel = document.getElementById('flagged-list');
+  var flagItem = document.getElementById('flagged_' + rowId);
 
   if (wasFlagged) {
-    // unflagged
-    row.classList.remove('flagged');
-    btn.classList.remove('flagged');
-
+    // UNFLAG: remove from row and from global panel
     if (flagItem) flagItem.remove();
-
+    if (flagPanel.children.length === 0) {
+      document.getElementById('flagged-panel').style.display = 'none';
+    }
   } else {
-    // newly flagged
-    row.classList.add('flagged');
-    btn.classList.add('flagged');
-
+    // FLAG: add to row and to global panel
     if (!flagItem) {
+      flagItem = document.createElement('div');
+      flagItem.id = 'flagged_' + rowId;
+
       var urlCell = row.querySelector('td a') || row.querySelector('td .result-url');
       var text = urlCell ? urlCell.textContent : 'Unknown';
 
-      flagItem = document.createElement('div');
-      flagItem.id = 'flagged_footer_' + rowId;
       flagItem.innerHTML =
-        '<span style="color:var(--blue);font-weight:500;cursor:pointer;white-space:nowrap;" ' +
-          'onclick="toggleFlag(document.getElementById(\'flag_btn_' + rowId + '\'), \'' + rowId + '\')">' +
+        '<span style="color:var(--blue);font-weight:500;cursor:pointer;" ' +
+          'onclick="document.getElementById(\'' + rowId + '\').scrollIntoView({block:\'nearest\',behavior:\'smooth\'});">' +
           text +
         '</span>' +
-        '<button id="flag_btn_' + rowId + '" style="font-size:var(--xs);color:var(--muted);padding:0 4px;">✕</button>';
+        '<button style="font-size:var(--xs);padding:0 6px;margin-left:4px;cursor:pointer;" ' +
+          'onclick="toggleFlag(this, \'' + rowId + '\')">✕</button>';
 
-      footerList.appendChild(flagItem);
+      flagPanel.appendChild(flagItem);
+      document.getElementById('flagged-panel').style.display = 'block';
     }
   }
 }

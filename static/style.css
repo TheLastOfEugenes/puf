@@ -298,7 +298,26 @@ input[type=number] { -moz-appearance: textfield; }
   padding: 0 4px;
 }
 
-.tree-file-nmap       { color: var(--blue); }
-.tree-file-filtered   { color: var(--green); }
-.tree-file-custom-filtered { color: var(--purple); }
-.tree-file-raw         { color: initial; }
+.tree-file-nmap,
+.tree-file-nmap .tree-label,
+.tree-file-nmap .tree-icon {
+  color: var(--blue) !important;
+}
+
+.tree-file-filtered,
+.tree-file-filtered .tree-label,
+.tree-file-filtered .tree-icon {
+  color: var(--green) !important;
+}
+
+.tree-file-custom-filtered,
+.tree-file-custom-filtered .tree-label,
+.tree-file-custom-filtered .tree-icon {
+  color: var(--purple) !important;
+}
+
+.tree-file-raw,
+.tree-file-raw .tree-label,
+.tree-file-raw .tree-icon {
+  color: initial;
+}
