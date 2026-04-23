@@ -508,6 +508,7 @@ function buildFlaggedItemHtml(row, rowId) {
 }
 
 function toggleFlag(btn, rowId) {
+  console.log("flag has been clicked")
   var match = rowId.match(/rrow(\d+)/);
   if (!match) return;
 
@@ -587,7 +588,7 @@ function portRowClick(e, hostname, port) {
 }
 
 function resultRowClick(e, url) {
-  if (e.target.tagName === 'A' || e.target.closest('a') || e.target.classList.contains('flag-btn')) {
+  if (e.target.tagName === 'A' || e.target.closest('a')) {
     e.stopPropagation();
     return;
   }
