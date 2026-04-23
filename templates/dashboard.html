@@ -51,17 +51,17 @@
           <div class="bar-title">Command Log</div>
           <div id="cmd-log-list"></div>
         </div>
-      <div id="cmd-panel">
-        <div class="bar-title" style="display:flex;align-items:center;justify-content:space-between;">
-          Commands
-          <div style="display:flex;align-items:center;gap:6px;">
-            <button id="recurse-btn" class="btn-ghost" onclick="toggleRecurse()" style="font-size:var(--xs);">○ recurse</button>
-            <input id="recurse-depth" type="number" value="2" min="1" max="10"
-              style="width:36px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--r);padding:2px 4px;font-size:var(--xs);text-align:center;" title="Recursion depth">
-            <button id="autofilter-btn" class="btn-ghost" onclick="toggleAutoFilter()" style="font-size:var(--xs);"></button>
-            <button class="btn-ghost" onclick="resetCommands()" style="font-size:var(--xs);">↺ reset</button>
+        <div id="cmd-panel">
+          <div class="bar-title" style="display:flex;align-items:center;justify-content:space-between;">
+            Commands
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button id="recurse-btn" class="btn-ghost" onclick="toggleRecurse()" style="font-size:var(--xs);">○ recurse</button>
+              <input id="recurse-depth" type="number" value="2" min="1" max="10"
+                style="width:36px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--r);padding:2px 4px;font-size:var(--xs);text-align:center;" title="Recursion depth">
+              <button id="autofilter-btn" class="btn-ghost" onclick="toggleAutoFilter()" style="font-size:var(--xs);"></button>
+              <button class="btn-ghost" onclick="resetCommands()" style="font-size:var(--xs);">↺ reset</button>
+            </div>
           </div>
-        </div>
         <div id="cmd-panel-list"></div>
       </div>
     </div>

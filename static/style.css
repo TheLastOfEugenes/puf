@@ -13,6 +13,8 @@
   --yellow:   #d29922;
   --red:      #f85149;
   --purple:   #a25cff;
+  --orange:   #f08d49;
+  --soft-orange: #e67e22;
   --font:     'JetBrains Mono', 'Fira Code', monospace;
   --xs:       0.72rem;
   --sm:       0.825rem;
@@ -200,7 +202,7 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 #bottom-bar {
-  position: relative;
+  position: relative; /* important: contain the absolute panel */
   display: flex;
   flex-direction: column;
   min-height: 140px;
@@ -210,15 +212,26 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 #flagged-panel {
-  position: sticky;
+  position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 12px 16px 10px 16px;
   font-size: var(--xs);
-  border-left: none;
-  border-right: none;
+  pointer-events: none; /* optional: panel doesn’t steal click focus */
+}
+
+#flagged-panel * {
+  pointer-events: auto; /* but buttons and links inside still work */
+}
+
+#cmd-log-and-panel {
+  display: flex;
+  flex: 1;
+  border-top: 1px solid var(--border);
 }
 
 #flagged-list {
@@ -234,12 +247,6 @@ input[type=number] { -moz-appearance: textfield; }
   flex-direction: column;
   border-right: 1px solid var(--border);
   overflow: hidden;
-}
-
-#cmd-log-and-panel {
-  display: flex;
-  flex: 1;
-  border-top: 1px solid var(--border);
 }
 
 #cmd-log-list {
@@ -343,7 +350,7 @@ input[type=number] { -moz-appearance: textfield; }
 .tree-file-custom-filtered,
 .tree-file-custom-filtered .tree-label,
 .tree-file-custom-filtered .tree-icon {
-  color: var(--purple) !important;
+  color: var(--orange) !important;
 }
 
 .tree-file-raw,
