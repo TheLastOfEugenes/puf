@@ -693,8 +693,8 @@ function runCustomFilter() {
     word_counts_keep:   document.getElementById('fm-words-mode').textContent === '○',
     lengths:            parseList(document.getElementById('fm-lengths').value),
     lengths_keep:       document.getElementById('fm-lengths-mode').textContent === '○',
-    regex:      document.getElementById('fm-regex').value.trim(),
-    regex_keep: document.getElementById('fm-regex-mode').textContent === '○',
+    regex:              parseList(document.getElementById('fm-regex').value),
+    regex_keep:         document.getElementById('fm-regex-mode').textContent === '○',
   };
   closeFilterModal();
   var filterId = 'filter_' + Date.now();
