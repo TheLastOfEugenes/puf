@@ -571,7 +571,8 @@ function filePopover(x, y, name, parts) {
     var u = '/api/results/file?path=' + encodeURIComponent(filePath);
     actions.push({ label: 'View results', fn: function() { viewJson(u, name); } });
     actions.push({ label: 'View raw file', fn: (function(fp, n) { return function() { viewRaw(fp, n); }; })(filePath, name) });
-    if (!name.endsWith('_f.json') && !name.endsWith('_cs.json')) {
+    var allow_refilter = true
+    if (allow_refilter || (!name.endsWith('_f.json') && !name.endsWith('_cs.json'))) {
       actions.push({
         label: '<img src="/' + ICONS['icon_filter'] + '" class="tree-icon" style="filter:invert(60%) sepia(100%) saturate(500%) hue-rotate(0deg);"> Custom filter',
         fn: (function(fp, n) { return function() { openFilterModal(fp, n); }; })(filePath, name),
@@ -594,6 +595,13 @@ function openFilterModal(path, name) {
   document.getElementById('fm-words').value = '';
   document.getElementById('fm-lengths').value = '';
   document.getElementById('filter-modal').style.display = 'flex';
+
+  ['fm-status-mode','fm-words-mode','fm-lengths-mode'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    btn.textContent = '✕';
+    btn.style.background = '#c0392b';
+  });
+
   closePopover();
 }
 
@@ -612,14 +620,28 @@ function parseList(val) {
     .filter(Boolean).map(Number).filter(function(n) { return !isNaN(n); });
 }
 
+function toggleFilterMode(btnId) {
+  var btn = document.getElementById(btnId);
+  if (btn.textContent === '✕') {
+    btn.textContent = '○';
+    btn.style.background = '#27ae60';
+  } else {
+    btn.textContent = '✕';
+    btn.style.background = '#c0392b';
+  }
+}
+
 function runCustomFilter() {
   var payload = {
     path: _filterTargetPath,
     smart_enabled: document.getElementById('fm-smart-enabled').checked,
     smart_limit: parseInt(document.getElementById('fm-smart-limit').value) || 1000,
-    status_codes: parseList(document.getElementById('fm-status').value),
-    word_counts:  parseList(document.getElementById('fm-words').value),
-    lengths:      parseList(document.getElementById('fm-lengths').value)
+    status_codes:       parseList(document.getElementById('fm-status').value),
+    status_codes_keep:  document.getElementById('fm-status-mode').textContent === '○',
+    word_counts:        parseList(document.getElementById('fm-words').value),
+    word_counts_keep:   document.getElementById('fm-words-mode').textContent === '○',
+    lengths:            parseList(document.getElementById('fm-lengths').value),
+    lengths_keep:       document.getElementById('fm-lengths-mode').textContent === '○',
   };
   closeFilterModal();
   var filterId = 'filter_' + Date.now();
@@ -731,12 +753,6 @@ function initCmdPanel() {
     .then(function(data) {
       var list = document.getElementById('cmd-panel-list');
       list.innerHTML = '';
-
-      // ── reset button ──
-      var resetRow = document.createElement('div');
-      resetRow.style.cssText = 'display:flex;justify-content:flex-end;padding:4px 8px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;';
-      resetRow.innerHTML = '<button class="btn-ghost" onclick="resetCommands()" title="Reset all commands to defaults">↺ reset</button>';
-      list.appendChild(resetRow);
 
       ['nmap','fuzz','fuzz_subs'].forEach(function(key) {
         var raw = data[key] || '';
