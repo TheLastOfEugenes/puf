@@ -606,32 +606,28 @@ function buildTree(data, container) {
     var indent = (depth * 14) + 'px';
     var name = parts[parts.length - 1] || path;
 
-    // If this is the exports folder, don’t treat it as a target
-    if (depth === 1 && name === 'exports') {
-      // Folder, but not a “target” host
-      var li = document.createElement('li');
-      var label = document.createElement('div');
-      label.className = 'tree-label';
-      label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%;';
-      label.innerHTML =
-        '<img src="/' + ICONS['icon_exports'] + '" class="tree-icon">' +
-        '<span style="flex:1">' + name + '</span>' +
-        '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '\',\'' + name + '\')">&#x2715;</button>';
-      label.addEventListener('click', function(e) {
-        // Not a host → just browse exports folder
-        e.stopPropagation();
-      });
-      li.appendChild(label);
-      container.appendChild(li);
-      return;
-    }
-
     var li = document.createElement('li');
     var label = document.createElement('div');
+
+    // Check if this is the "exports" folder
+    var isExports = parts.length >= 1 && parts[parts.length - 1] === 'exports';
+
+    var src = isExports
+      ? ICONS['icon_exports'] || ICONS['icon_depth_0']
+      : (ICONS['icon_depth_' + depth] || ICONS['icon_depth_0']);
+
+    label.className = 'tree-label';
+    label.style.cssText = 'padding-left:calc(' + indent + ' + 12px);display:flex;align-items:center;width:100%;';
+    label.innerHTML =
+      '<img src="/' + src + '" class="tree-icon">' +
+      '<span style="flex:1">' + name + '</span>' +
+      '<button class="tree-del" onclick="event.stopPropagation();deletePath(\'' + path + '\',\'' + name + '\')">&#x2715;</button>';
+
     label.addEventListener('click', function(e) {
       e.stopPropagation();
       folderPopover(e.clientX, e.clientY, name, parts);
     });
+
     li.appendChild(label);
 
     if (node.files && node.files.length) {
