@@ -330,7 +330,6 @@ function viewNmap(target) {
             '<td class="status-' + (p.state === 'open' ? '2xx' : 'muted') + '">' + p.state + '</td>' +
             '<td>' + p.service + '</td>' +
             '<td class="muted">' + (p.version || '') + '</td>' +
-            '<td><button class="flag-btn" onclick="toggleFlag(event, this, \'rrow_' + id + '_' + idx + '\')" title="Flag as target">⚑</button></td>' +
             '</tr>';
           idx++;
         });
